@@ -162,7 +162,83 @@
 }
 
 .recent-amount.expense {
+  color: var(--danger);
+}
+
+/* Budget Card Styles */
+.budget-card {
+  margin-top: 1.5rem;
+}
+
+.budget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.budget-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.budget-category {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
   color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.budget-color-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.budget-amounts {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.budget-progress-bg {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.bg-success {
+  background-color: var(--success);
+}
+
+.bg-warning {
+  background-color: var(--warning);
+}
+
+.bg-danger {
+  background-color: var(--danger);
+}
+
+.budget-overage-text {
+  font-size: 0.75rem;
+  color: var(--danger);
+  align-self: flex-end;
 }
 
 .recent-amount.transfer {

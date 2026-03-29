@@ -20,6 +20,7 @@ export const Settings: React.FC = () => {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#EF4444');
   const [type, setType] = useState<CategoryType>('expense');
+  const [budget, setBudget] = useState('');
 
   const filteredCategories = categories.filter(c => c.type === activeTab);
 
@@ -29,11 +30,13 @@ export const Settings: React.FC = () => {
       setName(category.name);
       setColor(category.color || '#EF4444');
       setType(category.type);
+      setBudget(category.budget ? category.budget.toString() : '');
     } else {
       setEditingCategory(null);
       setName('');
       setColor(activeTab === 'expense' ? '#EF4444' : '#10B981');
       setType(activeTab);
+      setBudget('');
     }
     setIsModalOpen(true);
   };
@@ -45,10 +48,27 @@ export const Settings: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    let budgetValue: number | undefined = undefined;
+    if (type === 'expense' && budget && !isNaN(parseFloat(budget))) {
+      budgetValue = parseFloat(budget);
+    }
+
     if (editingCategory) {
-      updateCategory(editingCategory.id, { name, color, type });
+      updateCategory(editingCategory.id, { 
+        name, 
+        color, 
+        type,
+        ...(type === 'expense' ? { budget: budgetValue } : { budget: undefined }) // Clear if moved to income
+      });
     } else {
-      addCategory({ name, color, type, icon: 'circle' });
+      addCategory({ 
+        name, 
+        color, 
+        type, 
+        icon: 'circle',
+        ...(budgetValue ? { budget: budgetValue } : {})
+      });
     }
     handleCloseModal();
   };
@@ -86,7 +106,14 @@ export const Settings: React.FC = () => {
                   className="category-color-swatch" 
                   style={{ backgroundColor: cat.color || '#ccc' }}
                 />
-                <span className="category-name">{cat.name}</span>
+                <span className="category-name">
+                  {cat.name}
+                  {cat.budget && (
+                    <span className="category-budget-badge">
+                      Target: ₹{cat.budget.toLocaleString('en-IN')}
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="category-actions">
                 <button className="icon-btn-small" onClick={() => handleOpenModal(cat)}>
@@ -180,6 +207,21 @@ export const Settings: React.FC = () => {
               <span className="color-value">{color}</span>
             </div>
           </div>
+
+          {type === 'expense' && (
+            <div className="form-group">
+              <label className="form-label">Monthly Budget Limit (₹)</label>
+              <input 
+                type="number" 
+                min="0"
+                step="0.01"
+                className="form-input" 
+                value={budget} 
+                onChange={e => setBudget(e.target.value)}
+                placeholder="Leave blank for no limit"
+              />
+            </div>
+          )}
           
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>

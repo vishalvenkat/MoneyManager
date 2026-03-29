@@ -81,6 +81,50 @@
   text-overflow: ellipsis;
 }
 
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Budget Feedback Alerts */
+.budget-feedback {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1.25rem;
+  border-left: 4px solid transparent;
+  animation: fadeIn 0.3s ease;
+}
+
+.budget-feedback strong {
+  margin-right: 0.25rem;
+}
+
+.budget-feedback-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #065f46;
+  border-left-color: var(--success);
+}
+
+.budget-feedback-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #92400e;
+  border-left-color: var(--warning);
+}
+
+.budget-feedback-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #991b1b;
+  border-left-color: var(--danger);
+}
+
+[data-theme='dark'] .budget-feedback-success { color: #34d399; }
+[data-theme='dark'] .budget-feedback-warning { color: #fbbf24; }
+[data-theme='dark'] .budget-feedback-danger { color: #f87171; }
+
 .tx-amount-actions {
   display: flex;
   flex-direction: column;

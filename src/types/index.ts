@@ -13,6 +13,7 @@ export type Category = {
   type: CategoryType;
   color?: string;
   icon?: string;
+  budget?: number; // Monthly budget limit in INR
 };
 
 export type TransactionType = 'income' | 'expense' | 'transfer';

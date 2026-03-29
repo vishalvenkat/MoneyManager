@@ -65,7 +65,18 @@
 
 .category-name {
   font-weight: 500;
-  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.category-budget-badge {
+  font-size: 0.75rem;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
 }
 
 .category-actions {

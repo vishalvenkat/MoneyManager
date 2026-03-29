@@ -44,6 +44,36 @@ export const Dashboard: React.FC = () => {
     })).sort((a, b) => b.value - a.value);
   }, [transactions, categories]);
 
+  // Budget Usage Data
+  const budgetUsageData = useMemo(() => {
+    return categories
+      .filter(c => c.type === 'expense' && c.budget && c.budget > 0)
+      .map(cat => {
+        let spent = 0;
+        transactions.forEach(t => {
+          if (t.type === 'expense' && t.categoryId === cat.id && isThisMonth(new Date(t.date))) {
+            spent += t.amount;
+          }
+        });
+        const percentage = Math.min((spent / cat.budget!) * 100, 100);
+        const rawPercentage = (spent / cat.budget!) * 100;
+
+        let status: 'success' | 'warning' | 'danger' = 'success';
+        if (rawPercentage > 100) status = 'danger';
+        else if (rawPercentage >= 80) status = 'warning';
+
+        return {
+          ...cat,
+          spent,
+          budget: cat.budget!,
+          percentage,
+          rawPercentage,
+          status
+        };
+      })
+      .sort((a, b) => b.rawPercentage - a.rawPercentage);
+  }, [categories, transactions]);
+
   // Chart Data: Last 7 Days Overview
   const last7DaysData = useMemo(() => {
     const data: Record<string, { name: string, income: number, expense: number }> = {};
@@ -137,7 +167,7 @@ export const Dashboard: React.FC = () => {
           <h3 className="chart-title">Expenses by Category (This Month)</h3>
           <div className="chart-container">
             {expenseByCategory.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie
                     data={expenseByCategory}
@@ -171,6 +201,38 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {budgetUsageData.length > 0 && (
+        <div className="card budget-card">
+          <h3 className="chart-title">Budget Usage (This Month)</h3>
+          <div className="budget-list">
+            {budgetUsageData.map(item => (
+              <div key={item.id} className="budget-item">
+                <div className="budget-header">
+                  <span className="budget-category">
+                    <span className="budget-color-swatch" style={{ backgroundColor: item.color }} />
+                    {item.name}
+                  </span>
+                  <span className="budget-amounts">
+                    {formatCurrency(item.spent)} / {formatCurrency(item.budget)}
+                  </span>
+                </div>
+                <div className="budget-progress-bg">
+                  <div
+                    className={`budget-progress-fill bg-${item.status}`}
+                    style={{ width: `${item.percentage}%` }}
+                  />
+                </div>
+                {item.status === 'danger' && (
+                  <div className="budget-overage-text">
+                    Exceeded by {formatCurrency(item.spent - item.budget)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card recent-transactions-card">
         <h3 className="chart-title">Recent Transactions</h3>

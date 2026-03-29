@@ -99,8 +99,59 @@ export const Transactions: React.FC = () => {
     return groups;
   }, [transactions]);
 
+  // Smart Budget Logic
+  const currentCategoryObj = useMemo(() => {
+    return categories.find(c => c.id === categoryId);
+  }, [categories, categoryId]);
+
+  const currentMonthCategorySpend = useMemo(() => {
+    if (!currentCategoryObj || !currentCategoryObj.budget || type !== 'expense') return 0;
+    const baseDate = new Date(date); // Use the currently selected form date
+    
+    return transactions.reduce((sum, t) => {
+      if (
+        t.type === 'expense' && 
+        t.categoryId === categoryId && 
+        (!editingTransaction || t.id !== editingTransaction.id) // Exclude the currently editing tx amount from the base sum
+      ) {
+        const txDate = new Date(t.date);
+        if (txDate.getMonth() === baseDate.getMonth() && txDate.getFullYear() === baseDate.getFullYear()) {
+          return sum + t.amount;
+        }
+      }
+      return sum;
+    }, 0);
+  }, [transactions, categoryId, currentCategoryObj, type, editingTransaction, date]);
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR' }).format(amount);
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  };
+
+  const renderBudgetAlert = () => {
+    if (!currentCategoryObj?.budget || type !== 'expense') return null;
+    const projectedSpend = currentMonthCategorySpend + (parseFloat(amount) || 0);
+    const budget = currentCategoryObj.budget;
+    const percentage = (projectedSpend / budget) * 100;
+
+    if (percentage > 100) {
+      return (
+        <div className="budget-feedback budget-feedback-danger">
+          <strong>Over Budget:</strong> You will exceed your monthly budget by {formatCurrency(projectedSpend - budget)}.
+        </div>
+      );
+    } else if (percentage >= 80) {
+      return (
+        <div className="budget-feedback budget-feedback-warning">
+          <strong>Warning:</strong> You are approaching your monthly limit. {formatCurrency(budget - projectedSpend)} remaining.
+        </div>
+      );
+    } else {
+      return (
+        <div className="budget-feedback budget-feedback-success">
+          <strong>On Track:</strong> You still have {formatCurrency(budget - projectedSpend)} available this month.
+        </div>
+      );
+    }
   };
 
   const getCategoryTheme = (id?: string) => {
@@ -162,7 +213,7 @@ export const Transactions: React.FC = () => {
 
                       <div className="tx-amount-actions">
                         <div className={`tx-amount ${t.type}`}>
-                          {t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}{formatCurrency(t.amount)}
+                          {t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(t.amount)}
                         </div>
                         <div className="tx-actions">
                           <button className="icon-btn-small" onClick={() => handleOpenModal(t)}>
@@ -289,6 +340,8 @@ export const Transactions: React.FC = () => {
               </div>
             </div>
           )}
+
+          {renderBudgetAlert()}
 
           <div className="form-group">
             <label className="form-label">Notes (Optional)</label>
