@@ -41,7 +41,7 @@ export const Dashboard: React.FC = () => {
       name: categories.find(c => c.id === key)?.name || 'Unknown',
       value: data[key],
       color: categories.find(c => c.id === key)?.color || '#ccc'
-    })).sort((a,b) => b.value - a.value);
+    })).sort((a, b) => b.value - a.value);
   }, [transactions, categories]);
 
   // Chart Data: Last 7 Days Overview
@@ -71,7 +71,7 @@ export const Dashboard: React.FC = () => {
   }, [transactions]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
   const getCategoryTheme = (id?: string) => {
@@ -181,7 +181,7 @@ export const Dashboard: React.FC = () => {
             return (
               <div key={t.id} className="recent-item">
                 <div className="recent-icon" style={{ backgroundColor: isTransfer ? '#6366f1' : category?.color || '#ccc' }}>
-                  {isTransfer ? <TrendingUp size={16}/> : (t.type === 'income' ? <TrendingUp size={16}/> : <TrendingDown size={16}/>)}
+                  {isTransfer ? <TrendingUp size={16} /> : (t.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />)}
                 </div>
                 <div className="recent-details">
                   <div className="recent-title">{isTransfer ? 'Transfer' : category?.name || 'Uncategorized'}</div>

@@ -35,7 +35,7 @@ export const Accounts: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const balanceNum = parseFloat(initialBalance) || 0;
-    
+
     if (editingAccount) {
       // If editing initial balance, we need to adjust current balance
       const balanceDiff = balanceNum - editingAccount.initialBalance;
@@ -55,7 +55,7 @@ export const Accounts: React.FC = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
   return (
@@ -76,19 +76,19 @@ export const Accounts: React.FC = () => {
                 <div className="account-balance">{formatCurrency(account.currentBalance)}</div>
               </div>
             </div>
-            
+
             <div className="account-actions">
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 onClick={() => handleOpenModal(account)}
               >
                 <Edit2 size={16} /> Edit
               </button>
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
                 onClick={() => {
-                  if(window.confirm('Are you sure you want to delete this account?')) {
+                  if (window.confirm('Are you sure you want to delete this account?')) {
                     deleteAccount(account.id);
                   }
                 }}
@@ -105,36 +105,36 @@ export const Accounts: React.FC = () => {
         )}
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={handleCloseModal} 
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
         title={editingAccount ? "Edit Account" : "Add Account"}
       >
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Account Name</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
-              required 
+            <input
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
               placeholder="e.g. Main Checking, Cash"
             />
           </div>
           <div className="form-group">
             <label className="form-label">Initial Balance</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               step="0.01"
-              className="form-input" 
-              value={initialBalance} 
-              onChange={e => setInitialBalance(e.target.value)} 
-              required 
+              className="form-input"
+              value={initialBalance}
+              onChange={e => setInitialBalance(e.target.value)}
+              required
               placeholder="0.00"
             />
           </div>
-          
+
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
             <button type="submit" className="btn btn-primary">Save Account</button>

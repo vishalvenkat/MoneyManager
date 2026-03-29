@@ -12,7 +12,7 @@ export const Transactions: React.FC = () => {
   const { transactions, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
   const { accounts } = useAccounts();
   const { categories } = useCategories();
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
@@ -59,7 +59,7 @@ export const Transactions: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = parseFloat(amount);
-    
+
     // Construct ISO date string (we just use YYYY-MM-DD representing that day)
     const isoDate = `${date}T12:00:00.000Z`;
 
@@ -90,7 +90,7 @@ export const Transactions: React.FC = () => {
   const groupedTransactions = useMemo(() => {
     const groups: { [key: string]: Transaction[] } = {};
     const sorted = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
+
     sorted.forEach(t => {
       const dayKey = t.date.split('T')[0];
       if (!groups[dayKey]) groups[dayKey] = [];
@@ -100,7 +100,7 @@ export const Transactions: React.FC = () => {
   }, [transactions]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
   const getCategoryTheme = (id?: string) => {
@@ -124,42 +124,42 @@ export const Transactions: React.FC = () => {
         {Object.keys(groupedTransactions).length === 0 && (
           <div className="card empty-state">No transactions recorded yet.</div>
         )}
-        
-        {Object.keys(groupedTransactions).sort((a,b) => new Date(b).getTime() - new Date(a).getTime()).map(dateKey => {
+
+        {Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).map(dateKey => {
           const dayTransactions = groupedTransactions[dateKey];
           const dateObj = new Date(dateKey + 'T12:00:00Z');
-          
+
           return (
             <div key={dateKey} className="day-group">
               <div className="day-header">
                 <h3>{format(dateObj, 'MMM d, yyyy')}</h3>
                 <span className="day-subtitle">{format(dateObj, 'EEEE')}</span>
               </div>
-              
+
               <div className="day-items card">
                 {dayTransactions.map(t => {
                   const category = getCategoryTheme(t.categoryId);
                   const isTransfer = t.type === 'transfer';
-                  
+
                   return (
                     <div key={t.id} className="transaction-row">
                       <div className="tx-icon" style={{ backgroundColor: isTransfer ? '#6366f1' : category?.color || '#ccc' }}>
-                        {isTransfer ? <ArrowRightLeft size={16} /> : (t.type === 'income' ? <TrendingUp size={16}/> : <TrendingDown size={16}/>)}
+                        {isTransfer ? <ArrowRightLeft size={16} /> : (t.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />)}
                       </div>
-                      
+
                       <div className="tx-details">
                         <div className="tx-title">
                           {isTransfer ? 'Fund Transfer' : category?.name || 'Uncategorized'}
                         </div>
                         <div className="tx-subtitle">
-                          {isTransfer 
+                          {isTransfer
                             ? `${getAccountName(t.fromAccountId)} → ${getAccountName(t.toAccountId)}`
                             : getAccountName(t.accountId)
                           }
                           {t.notes && ` • ${t.notes}`}
                         </div>
                       </div>
-                      
+
                       <div className="tx-amount-actions">
                         <div className={`tx-amount ${t.type}`}>
                           {t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}{formatCurrency(t.amount)}
@@ -168,10 +168,10 @@ export const Transactions: React.FC = () => {
                           <button className="icon-btn-small" onClick={() => handleOpenModal(t)}>
                             <Edit2 size={14} />
                           </button>
-                          <button 
-                            className="icon-btn-small delete-btn" 
+                          <button
+                            className="icon-btn-small delete-btn"
                             onClick={() => {
-                              if(window.confirm('Delete this transaction?')) deleteTransaction(t.id);
+                              if (window.confirm('Delete this transaction?')) deleteTransaction(t.id);
                             }}
                           >
                             <Trash2 size={14} />
@@ -187,9 +187,9 @@ export const Transactions: React.FC = () => {
         })}
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={handleCloseModal} 
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
         title={editingTransaction ? "Edit Transaction" : "Add Transaction"}
       >
         <form onSubmit={handleSubmit}>
@@ -208,28 +208,28 @@ export const Transactions: React.FC = () => {
               ))}
             </div>
           </div>
-          
+
           <div className="form-row">
             <div className="form-group flex-1">
               <label className="form-label">Amount</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 step="0.01"
                 min="0.01"
-                className="form-input" 
-                value={amount} 
-                onChange={e => setAmount(e.target.value)} 
-                required 
+                className="form-input"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                required
               />
             </div>
             <div className="form-group flex-1">
               <label className="form-label">Date</label>
-              <input 
-                type="date" 
-                className="form-input" 
-                value={date} 
-                onChange={e => setDate(e.target.value)} 
-                required 
+              <input
+                type="date"
+                className="form-input"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                required
               />
             </div>
           </div>
@@ -238,9 +238,9 @@ export const Transactions: React.FC = () => {
             <div className="form-row">
               <div className="form-group flex-1">
                 <label className="form-label">From Account</label>
-                <select 
-                  className="form-input" 
-                  value={fromAccountId} 
+                <select
+                  className="form-input"
+                  value={fromAccountId}
                   onChange={e => setFromAccountId(e.target.value)}
                   required
                 >
@@ -250,9 +250,9 @@ export const Transactions: React.FC = () => {
               </div>
               <div className="form-group flex-1">
                 <label className="form-label">To Account</label>
-                <select 
-                  className="form-input" 
-                  value={toAccountId} 
+                <select
+                  className="form-input"
+                  value={toAccountId}
                   onChange={e => setToAccountId(e.target.value)}
                   required
                 >
@@ -265,9 +265,9 @@ export const Transactions: React.FC = () => {
             <div className="form-row">
               <div className="form-group flex-1">
                 <label className="form-label">Category</label>
-                <select 
-                  className="form-input" 
-                  value={categoryId} 
+                <select
+                  className="form-input"
+                  value={categoryId}
                   onChange={e => setCategoryId(e.target.value)}
                   required
                 >
@@ -277,9 +277,9 @@ export const Transactions: React.FC = () => {
               </div>
               <div className="form-group flex-1">
                 <label className="form-label">Account</label>
-                <select 
-                  className="form-input" 
-                  value={accountId} 
+                <select
+                  className="form-input"
+                  value={accountId}
                   onChange={e => setAccountId(e.target.value)}
                   required
                 >
@@ -292,14 +292,14 @@ export const Transactions: React.FC = () => {
 
           <div className="form-group">
             <label className="form-label">Notes (Optional)</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              value={notes} 
-              onChange={e => setNotes(e.target.value)} 
+            <input
+              type="text"
+              className="form-input"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
             />
           </div>
-          
+
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={accounts.length === 0}>
@@ -307,7 +307,7 @@ export const Transactions: React.FC = () => {
             </button>
           </div>
           {accounts.length === 0 && (
-            <p style={{color: 'var(--warning)', fontSize: '0.875rem', marginTop: '0.5rem', textAlign: 'right'}}>
+            <p style={{ color: 'var(--warning)', fontSize: '0.875rem', marginTop: '0.5rem', textAlign: 'right' }}>
               Please create an Account first before adding transactions.
             </p>
           )}

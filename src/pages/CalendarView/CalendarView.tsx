@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useTransactions } from '../../context/TransactionContext';
 import { useCategories } from '../../context/CategoryContext';
 import { useAccounts } from '../../context/AccountContext';
-import { 
-  format, addMonths, subMonths, startOfMonth, endOfMonth, 
+import {
+  format, addMonths, subMonths, startOfMonth, endOfMonth,
   startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowRightLeft } from 'lucide-react';
@@ -16,7 +16,7 @@ export const CalendarView: React.FC = () => {
   const { categories } = useCategories();
   const { accounts } = useAccounts();
   const [currentDate, setCurrentDate] = useState(new Date());
-  
+
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -24,7 +24,7 @@ export const CalendarView: React.FC = () => {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
   };
 
   const getDayTransactions = (day: Date) => {
@@ -80,7 +80,7 @@ export const CalendarView: React.FC = () => {
       for (let i = 0; i < 7; i++) {
         formattedDate = format(day, 'd');
         const cloneDay = day;
-        
+
         const dayTxs = getDayTransactions(day);
         const income = dayTxs.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
         const expense = dayTxs.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
@@ -148,12 +148,12 @@ export const CalendarView: React.FC = () => {
               return (
                 <div key={t.id} className="detail-item">
                   <div className="detail-icon" style={{ backgroundColor: isTransfer ? '#6366f1' : category?.color || '#ccc' }}>
-                    {isTransfer ? <ArrowRightLeft size={16}/> : (t.type === 'income' ? <TrendingUp size={16}/> : <TrendingDown size={16}/>)}
+                    {isTransfer ? <ArrowRightLeft size={16} /> : (t.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />)}
                   </div>
                   <div className="detail-info">
                     <div className="detail-title">{isTransfer ? 'Transfer' : category?.name || 'Uncategorized'}</div>
                     <div className="detail-subtitle">
-                      {isTransfer 
+                      {isTransfer
                         ? `${getAccountName(t.fromAccountId)} → ${getAccountName(t.toAccountId)}`
                         : getAccountName(t.accountId)
                       }

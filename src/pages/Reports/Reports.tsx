@@ -44,7 +44,7 @@ export const Reports: React.FC = () => {
       name: categories.find(c => c.id === key)?.name || 'Unknown',
       value: data[key],
       color: categories.find(c => c.id === key)?.color || '#ccc'
-    })).sort((a,b) => b.value - a.value);
+    })).sort((a, b) => b.value - a.value);
   }, [filteredTransactions, categories]);
 
   const incomeByCategory = useMemo(() => {
@@ -59,11 +59,11 @@ export const Reports: React.FC = () => {
       name: categories.find(c => c.id === key)?.name || 'Unknown',
       value: data[key],
       color: categories.find(c => c.id === key)?.color || '#ccc'
-    })).sort((a,b) => b.value - a.value);
+    })).sort((a, b) => b.value - a.value);
   }, [filteredTransactions, categories]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
   const overviewData = [
@@ -102,7 +102,7 @@ export const Reports: React.FC = () => {
               </span>
             </div>
           </div>
-          
+
           <div className="chart-container mt-4" style={{ height: '300px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={overviewData} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
