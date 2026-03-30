@@ -2,14 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+
 const firebaseConfig = {
-  apiKey: "AIzaSyDiTwGO9Qvuxng_SOihBr1zmYjV37MIn_w",
-  authDomain: "money-manager-8eb72.firebaseapp.com",
-  projectId: "money-manager-8eb72",
-  storageBucket: "money-manager-8eb72.firebasestorage.app",
-  messagingSenderId: "47962228877",
-  appId: "1:47962228877:web:215edb2c2f9cd937b8bac4",
-  measurementId: "G-9DF8X3ZQST"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase

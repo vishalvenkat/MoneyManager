@@ -37,7 +37,7 @@ export const AuthPage: React.FC = () => {
   };
 
   const { isScriptLoaded, renderGoogleButton } = useGoogleAuth({
-    clientId: '47962228877-5phpa0pq4dcnrrn1d3pni632ntpj9vn4.apps.googleusercontent.com',
+    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
     onSuccess: handleGoogleSuccess,
     onError: () => setError('Google Sign-In failed to load. Please try again.')
   });
