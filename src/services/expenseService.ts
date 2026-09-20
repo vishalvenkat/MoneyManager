@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { 
-  collection, doc, setDoc, updateDoc, deleteDoc 
+  collection, doc, setDoc, updateDoc, deleteDoc, getDocs, writeBatch
 } from 'firebase/firestore';
 
 export const expenseService = {
@@ -45,5 +45,21 @@ export const expenseService = {
   deleteTransaction: async (uid: string, transactionId: string) => {
     const docRef = doc(db, 'users', uid, 'transactions', transactionId);
     await deleteDoc(docRef);
+  },
+
+  // --- Reset User Data ---
+  resetUserData: async (uid: string) => {
+    const collectionsToDelete = ['transactions', 'accounts', 'categories'];
+    for (const colName of collectionsToDelete) {
+      const colRef = collection(db, 'users', uid, colName);
+      const snapshot = await getDocs(colRef);
+      if (!snapshot.empty) {
+        const batch = writeBatch(db);
+        snapshot.docs.forEach((docSnap) => {
+          batch.delete(docSnap.ref);
+        });
+        await batch.commit();
+      }
+    }
   }
 };

@@ -14,6 +14,7 @@ interface UseGoogleAuthProps {
 
 export const useGoogleAuth = ({ clientId, onSuccess, onError }: UseGoogleAuthProps) => {
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  let googleInitialized = false;
 
   useEffect(() => {
     // Prevent loading the script multiple times
@@ -27,20 +28,21 @@ export const useGoogleAuth = ({ clientId, onSuccess, onError }: UseGoogleAuthPro
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
-    
+
     // Callback when script successfully loads
     script.onload = () => {
       setIsScriptLoaded(true);
-      
+
       // Initialize the Google Identity Services instance
-      if (window.google) {
+      if (window.google && !googleInitialized) {
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: onSuccess,
         });
+        googleInitialized = true;
       }
     };
-    
+
     script.onerror = () => {
       console.error('Failed to load Google Identity Services script');
       onError();
