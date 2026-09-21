@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useTransactions } from '../../context/TransactionContext';
 import { useCategories } from '../../context/CategoryContext';
-import { isThisMonth, isThisQuarter, isThisYear } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { MONTHS, QUARTERS, getAvailableYears, filterTransactionsByPeriod } from '../../utils/reportUtils';
+import { Calendar } from 'lucide-react';
 import './Reports.css';
 
 type ReportPeriod = 'month' | 'quarter' | 'year';
@@ -10,17 +11,28 @@ type ReportPeriod = 'month' | 'quarter' | 'year';
 export const Reports: React.FC = () => {
   const { transactions } = useTransactions();
   const { categories } = useCategories();
-  const [period, setPeriod] = useState<ReportPeriod>('month');
 
+  const now = new Date();
+  const [period, setPeriod] = useState<ReportPeriod>('month');
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
+  const [selectedQuarter, setSelectedQuarter] = useState<number>(Math.floor(now.getMonth() / 3) + 1);
+
+  // Derive unique years dynamically from user transactions
+  const availableYears = useMemo(() => {
+    return getAvailableYears(transactions);
+  }, [transactions]);
+
+  // Filter transactions based on active period & selected dropdowns
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      const date = new Date(t.date);
-      if (period === 'month') return isThisMonth(date);
-      if (period === 'quarter') return isThisQuarter(date);
-      if (period === 'year') return isThisYear(date);
-      return false;
-    });
-  }, [transactions, period]);
+    return filterTransactionsByPeriod(
+      transactions,
+      period,
+      selectedYear,
+      selectedMonth,
+      selectedQuarter
+    );
+  }, [transactions, period, selectedYear, selectedMonth, selectedQuarter]);
 
   const { totalIncome, totalExpense } = useMemo(() => {
     let income = 0;
@@ -63,7 +75,7 @@ export const Reports: React.FC = () => {
   }, [filteredTransactions, categories]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR' }).format(amount);
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
   };
 
   const overviewData = [
@@ -71,21 +83,84 @@ export const Reports: React.FC = () => {
     { name: 'Expense', value: totalExpense, fill: 'var(--danger)' },
   ];
 
+  const getPeriodTitle = () => {
+    if (period === 'month') {
+      return `${MONTHS[selectedMonth]} ${selectedYear} Cash Flow Overview`;
+    }
+    if (period === 'quarter') {
+      const qLabel = QUARTERS.find(q => q.value === selectedQuarter)?.label || `Q${selectedQuarter}`;
+      return `${qLabel} ${selectedYear} Cash Flow Overview`;
+    }
+    return `${selectedYear} Annual Cash Flow Overview`;
+  };
+
   return (
     <div className="reports-page">
       <div className="page-header">
         <h1 className="page-title">Reports & Insights</h1>
       </div>
 
-      <div className="period-tabs">
-        <button className={`tab-btn ${period === 'month' ? 'active' : ''}`} onClick={() => setPeriod('month')}>This Month</button>
-        <button className={`tab-btn ${period === 'quarter' ? 'active' : ''}`} onClick={() => setPeriod('quarter')}>This Quarter</button>
-        <button className={`tab-btn ${period === 'year' ? 'active' : ''}`} onClick={() => setPeriod('year')}>This Year</button>
+      <div className="reports-header-controls card">
+        <div className="period-tabs">
+          <button className={`tab-btn ${period === 'month' ? 'active' : ''}`} onClick={() => setPeriod('month')}>Monthly</button>
+          <button className={`tab-btn ${period === 'quarter' ? 'active' : ''}`} onClick={() => setPeriod('quarter')}>Quarterly</button>
+          <button className={`tab-btn ${period === 'year' ? 'active' : ''}`} onClick={() => setPeriod('year')}>Annual</button>
+        </div>
+
+        <div className="filter-dropdowns">
+          {/* Year Dropdown */}
+          <div className="filter-group">
+            <label className="filter-label">
+              <Calendar size={14} /> Year:
+            </label>
+            <select
+              className="filter-select"
+              value={selectedYear}
+              onChange={e => setSelectedYear(Number(e.target.value))}
+            >
+              {availableYears.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Month Dropdown (when Monthly view is active) */}
+          {period === 'month' && (
+            <div className="filter-group">
+              <label className="filter-label">Month:</label>
+              <select
+                className="filter-select"
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(Number(e.target.value))}
+              >
+                {MONTHS.map((m, idx) => (
+                  <option key={idx} value={idx}>{m}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Quarter Dropdown (when Quarterly view is active) */}
+          {period === 'quarter' && (
+            <div className="filter-group">
+              <label className="filter-label">Quarter:</label>
+              <select
+                className="filter-select"
+                value={selectedQuarter}
+                onChange={e => setSelectedQuarter(Number(e.target.value))}
+              >
+                {QUARTERS.map(q => (
+                  <option key={q.value} value={q.value}>{q.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="reports-grid">
         <div className="card overview-card">
-          <h3 className="chart-title">Cash Flow Overview</h3>
+          <h3 className="chart-title">{getPeriodTitle()}</h3>
           <div className="flow-stats">
             <div className="stat-box">
               <span className="stat-label">Total Income</span>
@@ -107,7 +182,7 @@ export const Reports: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={overviewData} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
-                <XAxis type="number" tickFormatter={(val) => `$${val}`} tick={{ fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
+                <XAxis type="number" tickFormatter={(val) => `₹${val}`} tick={{ fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-primary)', fontWeight: 500 }} />
                 <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} formatter={(val: any) => formatCurrency(val)} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
