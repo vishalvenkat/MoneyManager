@@ -30,19 +30,19 @@ export const Accounts: React.FC = () => {
   // Form State
   const [name, setName] = useState('');
   const [group, setGroup] = useState<AccountGroup>('Cash');
-  const [initialBalance, setInitialBalance] = useState('');
+  const [currentBalance, setCurrentBalance] = useState('');
 
   const handleOpenModal = (account?: Account, defaultGroup?: AccountGroup) => {
     if (account) {
       setEditingAccount(account);
       setName(account.name);
       setGroup(account.group || 'Cash');
-      setInitialBalance(account.initialBalance.toString());
+      setCurrentBalance((account.currentBalance ?? account.initialBalance ?? 0).toString());
     } else {
       setEditingAccount(null);
       setName('');
       setGroup(defaultGroup || 'Cash');
-      setInitialBalance('');
+      setCurrentBalance('');
     }
     setIsModalOpen(true);
   };
@@ -54,23 +54,21 @@ export const Accounts: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const balanceNum = parseFloat(initialBalance) || 0;
+    const balanceNum = parseFloat(currentBalance) || 0;
 
     if (editingAccount) {
-      // If editing initial balance, we adjust current balance
-      const balanceDiff = balanceNum - editingAccount.initialBalance;
       updateAccount(editingAccount.id, {
         name,
         group,
         initialBalance: balanceNum,
-        currentBalance: editingAccount.currentBalance + balanceDiff,
+        currentBalance: balanceNum,
       });
     } else {
       addAccount({
         name,
         group,
         initialBalance: balanceNum,
-        currentBalance: balanceNum, // initially current = initial
+        currentBalance: balanceNum,
       });
     }
     handleCloseModal();
@@ -246,13 +244,13 @@ export const Accounts: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Initial Balance (₹)</label>
+            <label className="form-label">Current Balance (₹)</label>
             <input
               type="number"
               step="0.01"
               className="form-input"
-              value={initialBalance}
-              onChange={e => setInitialBalance(e.target.value)}
+              value={currentBalance}
+              onChange={e => setCurrentBalance(e.target.value)}
               required
               placeholder="0.00"
             />

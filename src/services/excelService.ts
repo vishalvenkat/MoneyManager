@@ -69,7 +69,7 @@ export const excelService = {
     // Sheet 1: Instructions & Rules
     const instructionsData = [
       { 'Rule / Field': 'Date Format', 'Details & Guidance': 'Use DD/MM/YYYY or YYYY-MM-DD (e.g., 20/09/2026).' },
-      { 'Rule / Field': 'Accounts', 'Details & Guidance': 'Enter account name (e.g., Paytm, HDFC). New accounts will be automatically created with 0 initial balance.' },
+      { 'Rule / Field': 'Accounts', 'Details & Guidance': 'Enter account name (e.g., Paytm, HDFC). New accounts will be automatically created with 0 current balance.' },
       { 'Rule / Field': 'Category & Subcategory', 'Details & Guidance': 'Enter valid categories and optional subcategories. New categories will be auto-created on import.' },
       { 'Rule / Field': 'Income/Expense Column Values', 'Details & Guidance': 'Use "Exp." for expenses, "Income" for income, or "Transfer-In" / "Transfer-Out" for transfers between accounts.' },
       { 'Rule / Field': 'Transfer Rules', 'Details & Guidance': 'For Transfer-In, Category column represents Source Account and Accounts column represents Destination Account. Transfer-Out rows are handled automatically.' },
@@ -324,7 +324,7 @@ export const excelService = {
         const fromAccountName = rawCategory || 'Cash';
         const toAccountName = rawAccounts || 'Savings';
 
-        // Auto-create source & destination accounts if missing (initial balance 0)
+        // Auto-create source & destination accounts if missing (current balance 0)
         const fromAcc = await getOrCreateAccount(fromAccountName);
         const toAcc = await getOrCreateAccount(toAccountName);
 
