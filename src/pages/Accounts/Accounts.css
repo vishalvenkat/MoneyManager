@@ -1,14 +1,160 @@
+.accounts-page {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Grand Total Banner */
+.grand-total-card {
+  margin-bottom: 2rem;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border: 1px solid var(--border-color);
+}
+
+.grand-total-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.grand-total-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.grand-total-amount {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  margin-top: 0.25rem;
+}
+
+.group-summary-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.summary-pill {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.875rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  min-width: 110px;
+}
+
+.pill-name {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.pill-amount {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 0.15rem;
+}
+
+/* Group Sections */
+.account-groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.account-group-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 1rem;
+}
+
+.group-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.group-header-title h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.group-count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.group-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #fff;
+}
+
+.group-icon-badge.group-cash {
+  background-color: #10B981;
+}
+
+.group-icon-badge.group-debit-card {
+  background-color: #3B82F6;
+}
+
+.group-icon-badge.group-credit-card {
+  background-color: #8B5CF6;
+}
+
+.group-icon-badge.group-savings {
+  background-color: #F59E0B;
+}
+
+.group-header-total {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
+.group-header-total strong {
+  color: var(--text-primary);
+  font-size: 1.0625rem;
+  margin-left: 0.25rem;
+}
+
+/* Grids & Cards */
 .accounts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
 }
 
 .account-card {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.account-card:hover {
+  border-color: var(--accent-primary);
 }
 
 .account-card-header {
@@ -21,6 +167,17 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.account-group-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-primary);
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  margin-top: 0.25rem;
 }
 
 .account-balance {
@@ -42,7 +199,27 @@
   flex: 1;
 }
 
-/* Modal Form Styles specific to Accounts if needed, but we can reuse generic ones */
+.empty-group-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background-color: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  color: var(--text-secondary);
+}
+
+.empty-group-card p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.btn-small {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+/* Modal Form Footer */
 .modal-footer {
   margin-top: 2rem;
   display: flex;

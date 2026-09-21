@@ -1,6 +1,9 @@
+export type AccountGroup = 'Cash' | 'Debit Card' | 'Credit Card' | 'Savings';
+
 export type Account = {
   id: string;
   name: string;
+  group?: AccountGroup; // Account Grouping (Cash, Debit Card, Credit Card, Savings)
   initialBalance: number;
   currentBalance: number;
 };
