@@ -1,13 +1,14 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
 import { useAuth } from '../../context/AuthContext';
 import type { Transaction, TransactionType } from '../../types';
-import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, Download, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, Download, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, FileText, FilterX, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import { format } from 'date-fns';
 import { excelService, type ImportSummary } from '../../services/excelService';
+import { getAvailableFilterCounts, matchesFiltersExcept, type ActiveFilters } from '../../utils/filterUtils';
 import './Transactions.css';
 
 export const Transactions: React.FC = () => {
@@ -30,6 +31,18 @@ export const Transactions: React.FC = () => {
   const [toAccountId, setToAccountId] = useState('');
   const [notes, setNotes] = useState('');
 
+  // Filtering State
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [filterAccount, setFilterAccount] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterSubcategory, setFilterSubcategory] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   // Excel Import / Export State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -38,6 +51,92 @@ export const Transactions: React.FC = () => {
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Collect all unique subcategories across categories and transactions
+  const allSubcategories = useMemo(() => {
+    const set = new Set<string>();
+    categories.forEach(c => {
+      c.subcategories?.forEach(sub => set.add(sub));
+    });
+    transactions.forEach(t => {
+      if (t.subcategory) set.add(t.subcategory);
+    });
+    return Array.from(set).sort();
+  }, [categories, transactions]);
+
+  // Active filters object
+  const activeFilters = useMemo<ActiveFilters>(() => ({
+    startDate,
+    endDate,
+    filterAccount,
+    filterCategory,
+    filterSubcategory,
+    filterType,
+  }), [startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType]);
+
+  // Compute dynamic cascading counts for each filter option
+  const filterCounts = useMemo(() => {
+    return getAvailableFilterCounts(
+      transactions,
+      accounts,
+      categories,
+      allSubcategories,
+      activeFilters
+    );
+  }, [transactions, accounts, categories, allSubcategories, activeFilters]);
+
+  // Filter transactions based on active filters
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => matchesFiltersExcept(t, activeFilters));
+  }, [transactions, activeFilters]);
+
+  // Reset to page 1 whenever filters or page size change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType, pageSize]);
+
+  // Pagination Calculations
+  const totalItems = filteredTransactions.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+
+  const paginatedTransactions = useMemo(() => {
+    const sorted = [...filteredTransactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    return sorted.slice(startIndex, startIndex + pageSize);
+  }, [filteredTransactions, startIndex, pageSize]);
+
+  // Group paginated transactions by day
+  const groupedTransactions = useMemo(() => {
+    const groups: { [key: string]: Transaction[] } = {};
+    paginatedTransactions.forEach(t => {
+      const dayKey = t.date.split('T')[0];
+      if (!groups[dayKey]) groups[dayKey] = [];
+      groups[dayKey].push(t);
+    });
+    return groups;
+  }, [paginatedTransactions]);
+
+  const hasActiveFilters = Boolean(
+    startDate ||
+    endDate ||
+    filterAccount !== 'all' ||
+    filterCategory !== 'all' ||
+    filterSubcategory !== 'all' ||
+    filterType !== 'all'
+  );
+
+  const handleClearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setFilterAccount('all');
+    setFilterCategory('all');
+    setFilterSubcategory('all');
+    setFilterType('all');
+    setCurrentPage(1);
+  };
 
   const handleOpenModal = (transaction?: Transaction) => {
     if (transaction) {
@@ -163,19 +262,6 @@ export const Transactions: React.FC = () => {
     }
   };
 
-  // Group transactions by day
-  const groupedTransactions = useMemo(() => {
-    const groups: { [key: string]: Transaction[] } = {};
-    const sorted = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    sorted.forEach(t => {
-      const dayKey = t.date.split('T')[0];
-      if (!groups[dayKey]) groups[dayKey] = [];
-      groups[dayKey].push(t);
-    });
-    return groups;
-  }, [transactions]);
-
   // Smart Budget Logic & Subcategories helper
   const currentCategoryObj = useMemo(() => {
     return categories.find(c => c.id === categoryId);
@@ -263,9 +349,128 @@ export const Transactions: React.FC = () => {
         </div>
       </div>
 
+      {/* Advanced Filtering Toolbar */}
+      <div className="filter-toolbar card">
+        <div className="filter-toolbar-header">
+          <div className="filter-title">
+            <Filter size={16} /> Filter Transactions
+          </div>
+          {hasActiveFilters && (
+            <button className="btn-clear-filters" onClick={handleClearFilters}>
+              <FilterX size={14} /> Clear Filters
+            </button>
+          )}
+        </div>
+
+        <div className="filter-grid">
+          <div className="filter-item">
+            <label className="filter-label">From Date</label>
+            <input
+              type="date"
+              className="filter-input"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-item">
+            <label className="filter-label">To Date</label>
+            <input
+              type="date"
+              className="filter-input"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-item">
+            <label className="filter-label">Account</label>
+            <select
+              className="filter-select"
+              value={filterAccount}
+              onChange={e => setFilterAccount(e.target.value)}
+            >
+              <option value="all">All Accounts ({filterCounts.totalAccountsCount})</option>
+              {accounts.map(acc => {
+                const count = filterCounts.accountCounts[acc.id] || 0;
+                return (
+                  <option key={acc.id} value={acc.id} disabled={count === 0}>
+                    {acc.name} ({count})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <div className="filter-item">
+            <label className="filter-label">Category</label>
+            <select
+              className="filter-select"
+              value={filterCategory}
+              onChange={e => setFilterCategory(e.target.value)}
+            >
+              <option value="all">All Categories ({filterCounts.totalCategoriesCount})</option>
+              {categories.map(cat => {
+                const count = filterCounts.categoryCounts[cat.id] || 0;
+                return (
+                  <option key={cat.id} value={cat.id} disabled={count === 0}>
+                    {cat.name} ({count})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {allSubcategories.length > 0 && (
+            <div className="filter-item">
+              <label className="filter-label">Subcategory</label>
+              <select
+                className="filter-select"
+                value={filterSubcategory}
+                onChange={e => setFilterSubcategory(e.target.value)}
+              >
+                <option value="all">All Subcategories ({filterCounts.totalSubcategoriesCount})</option>
+                {allSubcategories.map(sub => {
+                  const count = filterCounts.subcategoryCounts[sub] || 0;
+                  return (
+                    <option key={sub} value={sub} disabled={count === 0}>
+                      {sub} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
+
+          <div className="filter-item">
+            <label className="filter-label">Type</label>
+            <select
+              className="filter-select"
+              value={filterType}
+              onChange={e => setFilterType(e.target.value)}
+            >
+              <option value="all">All Types ({filterCounts.totalTypesCount})</option>
+              <option value="expense" disabled={(filterCounts.typeCounts.expense || 0) === 0}>
+                Expense ({(filterCounts.typeCounts.expense || 0)})
+              </option>
+              <option value="income" disabled={(filterCounts.typeCounts.income || 0) === 0}>
+                Income ({(filterCounts.typeCounts.income || 0)})
+              </option>
+              <option value="transfer" disabled={(filterCounts.typeCounts.transfer || 0) === 0}>
+                Transfer ({(filterCounts.typeCounts.transfer || 0)})
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div className="transactions-list">
-        {Object.keys(groupedTransactions).length === 0 && (
-          <div className="card empty-state">No transactions recorded yet. Click "Import Excel" or "Add Transaction" to begin.</div>
+        {totalItems === 0 && (
+          <div className="card empty-state">
+            {hasActiveFilters
+              ? "No transactions match your filter criteria."
+              : "No transactions recorded yet. Click \"Import Excel\" or \"Add Transaction\" to begin."}
+          </div>
         )}
 
         {Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).map(dateKey => {
@@ -336,6 +541,55 @@ export const Transactions: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Pagination Footer */}
+      {totalItems > 0 && (
+        <div className="pagination-bar card">
+          <div className="pagination-info">
+            Showing <strong>{startIndex + 1}</strong>–<strong>{endIndex}</strong> of <strong>{totalItems}</strong> entries
+          </div>
+
+          <div className="pagination-controls">
+            <div className="rows-per-page">
+              <label>Rows per page:</label>
+              <select
+                className="select-small"
+                value={pageSize}
+                onChange={e => setPageSize(Number(e.target.value))}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+
+            <div className="page-nav-buttons">
+              <button
+                className="btn-page"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                title="Previous Page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <span className="page-indicator">
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                className="btn-page"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                title="Next Page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Transaction Modal */}
       <Modal
