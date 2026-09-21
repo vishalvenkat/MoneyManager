@@ -63,6 +63,78 @@ export const excelService = {
   },
 
   /**
+   * Download Excel Import Template with Instructions & Rules sheet and Template sheet
+   */
+  downloadExcelTemplate: (filename: string = 'MoneyManager_Import_Template.xlsx') => {
+    // Sheet 1: Instructions & Rules
+    const instructionsData = [
+      { 'Rule / Field': 'Date Format', 'Details & Guidance': 'Use DD/MM/YYYY or YYYY-MM-DD (e.g., 20/09/2026).' },
+      { 'Rule / Field': 'Accounts', 'Details & Guidance': 'Enter account name (e.g., Paytm, HDFC). New accounts will be automatically created with 0 initial balance.' },
+      { 'Rule / Field': 'Category & Subcategory', 'Details & Guidance': 'Enter valid categories and optional subcategories. New categories will be auto-created on import.' },
+      { 'Rule / Field': 'Income/Expense Column Values', 'Details & Guidance': 'Use "Exp." for expenses, "Income" for income, or "Transfer-In" / "Transfer-Out" for transfers between accounts.' },
+      { 'Rule / Field': 'Transfer Rules', 'Details & Guidance': 'For Transfer-In, Category column represents Source Account and Accounts column represents Destination Account. Transfer-Out rows are handled automatically.' },
+      { 'Rule / Field': 'Import Rules', 'Details & Guidance': 'First sheet will be considered for importing the data. Please remove the instructions and rules accordingly.' }
+    ];
+
+    // Sheet 2: Template with Sample Rows
+    const templateData = [
+      {
+        'Date': '20/09/2026',
+        'Accounts': 'Paytm',
+        'Category': 'Food & Dining',
+        'Subcategory': 'Groceries',
+        'Note': 'Weekly groceries',
+        'Amount': 1500,
+        'Income/Expense': 'Exp.',
+        'Description': 'Supermarket purchase'
+      },
+      {
+        'Date': '21/09/2026',
+        'Accounts': 'HDFC Savings',
+        'Category': 'Paytm',
+        'Subcategory': '',
+        'Note': 'Wallet reload',
+        'Amount': 5000,
+        'Income/Expense': 'Transfer-In',
+        'Description': 'Transfer from Paytm to HDFC Savings'
+      },
+      {
+        'Date': '22/09/2026',
+        'Accounts': 'HDFC Savings',
+        'Category': 'Salary',
+        'Subcategory': 'Monthly',
+        'Note': 'September Salary',
+        'Amount': 75000,
+        'Income/Expense': 'Income',
+        'Description': 'Direct deposit from employer'
+      }
+    ];
+
+    const workbook = XLSX.utils.book_new();
+
+    // Sheet 1: Instructions & Rules
+    const instructionsSheet = XLSX.utils.json_to_sheet(instructionsData);
+    instructionsSheet['!cols'] = [{ wch: 28 }, { wch: 95 }];
+    XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions & Rules');
+
+    // Sheet 2: Template
+    const templateSheet = XLSX.utils.json_to_sheet(templateData);
+    templateSheet['!cols'] = [
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 12 },
+      { wch: 16 },
+      { wch: 35 }
+    ];
+    XLSX.utils.book_append_sheet(workbook, templateSheet, 'Template');
+
+    XLSX.writeFile(workbook, filename);
+  },
+
+  /**
    * Import transactions from an Excel file (.xlsx, .xls, .csv)
    */
   importTransactionsFromExcel: async (

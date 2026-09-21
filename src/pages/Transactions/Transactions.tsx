@@ -4,7 +4,7 @@ import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
 import { useAuth } from '../../context/AuthContext';
 import type { Transaction, TransactionType } from '../../types';
-import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, Download, Upload, FileSpreadsheet, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, Download, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import { format } from 'date-fns';
 import { excelService, type ImportSummary } from '../../services/excelService';
@@ -104,6 +104,11 @@ export const Transactions: React.FC = () => {
   // Export Handler
   const handleExportExcel = () => {
     excelService.exportTransactionsToExcel(transactions, accounts, categories);
+  };
+
+  // Download Template Handler
+  const handleDownloadTemplate = () => {
+    excelService.downloadExcelTemplate();
   };
 
   // Open / Close Import Modal
@@ -243,6 +248,9 @@ export const Transactions: React.FC = () => {
       <div className="page-header">
         <h1 className="page-title">Transactions</h1>
         <div className="header-actions">
+          <button className="btn btn-secondary" onClick={handleDownloadTemplate} title="Download Excel Import Template">
+            <FileText size={16} /> Download Template
+          </button>
           <button className="btn btn-secondary" onClick={handleExportExcel} title="Export to Excel">
             <Download size={16} /> Export Excel
           </button>
@@ -503,6 +511,14 @@ export const Transactions: React.FC = () => {
               Upload your Excel file (.xlsx, .xls) or CSV. MoneyManager will automatically parse columns for
               <strong> Date, Accounts, Category, Subcategory, Note, Amount, Income/Expense, Description</strong>,
               and auto-create any new accounts or categories missing from your profile.
+              <button
+                type="button"
+                className="btn-link"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginLeft: '0.5rem', color: 'var(--accent-primary)', fontWeight: 600 }}
+                onClick={handleDownloadTemplate}
+              >
+                <FileText size={14} /> Download Sample Template
+              </button>
             </p>
 
             <div
