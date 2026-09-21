@@ -151,7 +151,16 @@ export const CalendarView: React.FC = () => {
                     {isTransfer ? <ArrowRightLeft size={16} /> : (t.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />)}
                   </div>
                   <div className="detail-info">
-                    <div className="detail-title">{isTransfer ? 'Transfer' : category?.name || 'Uncategorized'}</div>
+                    <div className="detail-title">
+                      {isTransfer ? (
+                        'Transfer'
+                      ) : (
+                        <>
+                          {category?.name || 'Uncategorized'}
+                          {t.subcategory && <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}> • {t.subcategory}</span>}
+                        </>
+                      )}
+                    </div>
                     <div className="detail-subtitle">
                       {isTransfer
                         ? `${getAccountName(t.fromAccountId)} → ${getAccountName(t.toAccountId)}`

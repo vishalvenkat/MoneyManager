@@ -14,6 +14,7 @@ export type Category = {
   color?: string;
   icon?: string;
   budget?: number; // Monthly budget limit in INR
+  subcategories?: string[]; // Optional subcategories list
 };
 
 export type TransactionType = 'income' | 'expense' | 'transfer';
@@ -24,6 +25,7 @@ export type Transaction = {
   date: string; // ISO string 
   type: TransactionType;
   categoryId?: string; // Optional for transfers
+  subcategory?: string; // Optional subcategory name
   accountId?: string; // Standard income/expense
   fromAccountId?: string; // For transfers
   toAccountId?: string; // For transfers

@@ -3,7 +3,7 @@ import { useCategories } from '../../context/CategoryContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useTransactions } from '../../context/TransactionContext';
 import type { Category, CategoryType } from '../../types';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, X } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import './Settings.css';
 
@@ -12,7 +12,7 @@ export const Settings: React.FC = () => {
   const { accounts } = useAccounts();
   const { transactions } = useTransactions();
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -20,7 +20,9 @@ export const Settings: React.FC = () => {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#EF4444');
   const [type, setType] = useState<CategoryType>('expense');
-  const [budget, setBudget] = useState('');
+  const [budget, setBudget] = useState('0');
+  const [subcategories, setSubcategories] = useState<string[]>([]);
+  const [newSubcategory, setNewSubcategory] = useState('');
 
   const filteredCategories = categories.filter(c => c.type === activeTab);
 
@@ -30,44 +32,63 @@ export const Settings: React.FC = () => {
       setName(category.name);
       setColor(category.color || '#EF4444');
       setType(category.type);
-      setBudget(category.budget ? category.budget.toString() : '');
+      setBudget(category.budget ? category.budget.toString() : '0');
+      setSubcategories(category.subcategories ? [...category.subcategories] : []);
     } else {
       setEditingCategory(null);
       setName('');
       setColor(activeTab === 'expense' ? '#EF4444' : '#10B981');
       setType(activeTab);
-      setBudget('');
+      setBudget('0');
+      setSubcategories([]);
     }
+    setNewSubcategory('');
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
+    setSubcategories([]);
+    setNewSubcategory('');
+  };
+
+  const handleAddSubcategory = () => {
+    const trimmed = newSubcategory.trim();
+    if (trimmed && !subcategories.includes(trimmed)) {
+      setSubcategories([...subcategories, trimmed]);
+      setNewSubcategory('');
+    }
+  };
+
+  const handleRemoveSubcategory = (subToRemove: string) => {
+    setSubcategories(subcategories.filter(s => s !== subToRemove));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    let budgetValue: number | undefined = undefined;
+
+    let budgetValue: number | undefined = 0;
     if (type === 'expense' && budget && !isNaN(parseFloat(budget))) {
       budgetValue = parseFloat(budget);
     }
 
     if (editingCategory) {
-      updateCategory(editingCategory.id, { 
-        name, 
-        color, 
+      updateCategory(editingCategory.id, {
+        name,
+        color,
         type,
-        ...(type === 'expense' ? { budget: budgetValue } : { budget: undefined }) // Clear if moved to income
+        subcategories,
+        ...(type === 'expense' ? { budget: budgetValue } : { budget: 0 }) // Clear if moved to income
       });
     } else {
-      addCategory({ 
-        name, 
-        color, 
-        type, 
+      addCategory({
+        name,
+        color,
+        type,
         icon: 'circle',
-        ...(budgetValue ? { budget: budgetValue } : {})
+        subcategories,
+        ...(budgetValue ? { budget: budgetValue } : { budget: 0 })
       });
     }
     handleCloseModal();
@@ -83,13 +104,13 @@ export const Settings: React.FC = () => {
       </div>
 
       <div className="tabs">
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'expense' ? 'active' : ''}`}
           onClick={() => setActiveTab('expense')}
         >
           Expense Categories
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'income' ? 'active' : ''}`}
           onClick={() => setActiveTab('income')}
         >
@@ -101,35 +122,49 @@ export const Settings: React.FC = () => {
         <div className="categories-list">
           {filteredCategories.map(cat => (
             <div key={cat.id} className="category-item">
-              <div className="category-info">
-                <div 
-                  className="category-color-swatch" 
-                  style={{ backgroundColor: cat.color || '#ccc' }}
-                />
-                <span className="category-name">
-                  {cat.name}
-                  {cat.budget && (
-                    <span className="category-budget-badge">
-                      Target: ₹{cat.budget.toLocaleString('en-IN')}
+              <div className="category-main-row">
+                <div className="category-info">
+                  <div
+                    className="category-color-swatch"
+                    style={{ backgroundColor: cat.color || '#ccc' }}
+                  />
+                  <span className="category-name">
+                    {cat.name}
+                    {cat.budget && (
+                      <span className="category-budget-badge">
+                        Target: ₹{cat.budget.toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="category-actions">
+                  <button className="icon-btn-small" onClick={() => handleOpenModal(cat)} title="Edit Category">
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    className="icon-btn-small delete-btn"
+                    onClick={() => {
+                      if (window.confirm('Delete this category?')) {
+                        deleteCategory(cat.id);
+                      }
+                    }}
+                    title="Delete Category"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {cat.subcategories && cat.subcategories.length > 0 && (
+                <div className="subcategories-chips">
+                  <span className="subcategories-label">Subcategories:</span>
+                  {cat.subcategories.map(sub => (
+                    <span key={sub} className="subcategory-chip">
+                      {sub}
                     </span>
-                  )}
-                </span>
-              </div>
-              <div className="category-actions">
-                <button className="icon-btn-small" onClick={() => handleOpenModal(cat)}>
-                  <Edit2 size={16} />
-                </button>
-                <button 
-                  className="icon-btn-small delete-btn" 
-                  onClick={() => {
-                    if(window.confirm('Delete this category?')) {
-                      deleteCategory(cat.id);
-                    }
-                  }}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {filteredCategories.length === 0 && (
@@ -144,8 +179,8 @@ export const Settings: React.FC = () => {
         </div>
         <div className="settings-section">
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Export your application data (accounts, categories, transactions) to a JSON file for backup.</p>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             onClick={() => {
               const data = {
                 accounts,
@@ -168,17 +203,17 @@ export const Settings: React.FC = () => {
         </div>
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={handleCloseModal} 
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
         title={editingCategory ? "Edit Category" : "Add Category"}
       >
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Type</label>
-            <select 
-              className="form-input" 
-              value={type} 
+            <select
+              className="form-input"
+              value={type}
               onChange={e => setType(e.target.value as CategoryType)}
             >
               <option value="expense">Expense</option>
@@ -187,22 +222,22 @@ export const Settings: React.FC = () => {
           </div>
           <div className="form-group">
             <label className="form-label">Category Name</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
-              required 
+            <input
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
             />
           </div>
           <div className="form-group">
             <label className="form-label">Color Code</label>
             <div className="color-picker-wrapper">
-              <input 
-                type="color" 
-                className="color-input" 
-                value={color} 
-                onChange={e => setColor(e.target.value)} 
+              <input
+                type="color"
+                className="color-input"
+                value={color}
+                onChange={e => setColor(e.target.value)}
               />
               <span className="color-value">{color}</span>
             </div>
@@ -211,18 +246,62 @@ export const Settings: React.FC = () => {
           {type === 'expense' && (
             <div className="form-group">
               <label className="form-label">Monthly Budget Limit (₹)</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 min="0"
                 step="0.01"
-                className="form-input" 
-                value={budget} 
+                className="form-input"
+                value={budget}
                 onChange={e => setBudget(e.target.value)}
                 placeholder="Leave blank for no limit"
               />
             </div>
           )}
-          
+
+          <div className="form-group">
+            <label className="form-label">Subcategories (Optional)</label>
+            <div className="subcategory-input-row">
+              <input
+                type="text"
+                className="form-input"
+                value={newSubcategory}
+                onChange={e => setNewSubcategory(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSubcategory();
+                  }
+                }}
+                placeholder="e.g. Groceries, Dining Out"
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleAddSubcategory}
+                disabled={!newSubcategory.trim()}
+              >
+                Add
+              </button>
+            </div>
+            {subcategories.length > 0 && (
+              <div className="subcategory-chips-form">
+                {subcategories.map((sub, index) => (
+                  <span key={index} className="subcategory-chip-editable">
+                    {sub}
+                    <button
+                      type="button"
+                      className="chip-remove-btn"
+                      onClick={() => handleRemoveSubcategory(sub)}
+                      title="Remove subcategory"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
             <button type="submit" className="btn btn-primary">Save Category</button>

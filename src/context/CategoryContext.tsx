@@ -15,11 +15,11 @@ interface CategoryContextType {
 }
 
 const defaultCategories: Category[] = [
-  { id: uuidv4(), name: 'Salary', type: 'income', color: '#10B981', icon: 'wallet' },
-  { id: uuidv4(), name: 'Freelance', type: 'income', color: '#3B82F6', icon: 'briefcase' },
-  { id: uuidv4(), name: 'Food', type: 'expense', color: '#F59E0B', icon: 'utensils' },
-  { id: uuidv4(), name: 'Rent', type: 'expense', color: '#EF4444', icon: 'home' },
-  { id: uuidv4(), name: 'Transport', type: 'expense', color: '#8B5CF6', icon: 'car' },
+  { id: uuidv4(), name: 'Salary', type: 'income', color: '#10B981', icon: 'wallet', subcategories: ['Base Salary', 'Bonus', 'Overtime'], budget: 0 },
+  { id: uuidv4(), name: 'Freelance', type: 'income', color: '#3B82F6', icon: 'briefcase', subcategories: ['Web Dev', 'Consulting', 'Design'], budget: 0 },
+  { id: uuidv4(), name: 'Food', type: 'expense', color: '#F59E0B', icon: 'utensils', subcategories: ['Groceries', 'Dining Out', 'Coffee & Snacks'], budget: 0 },
+  { id: uuidv4(), name: 'Rent', type: 'expense', color: '#EF4444', icon: 'home', subcategories: ['Apartment Rent', 'Maintenance', 'Parking'], budget: 0 },
+  { id: uuidv4(), name: 'Transport', type: 'expense', color: '#8B5CF6', icon: 'car', subcategories: ['Fuel', 'Public Transit', 'Vehicle Service', 'Cab/Taxi'], budget: 0 },
 ];
 
 const CategoryContext = createContext<CategoryContextType | undefined>(undefined);
@@ -40,7 +40,7 @@ export const CategoryProvider: React.FC<{ children: ReactNode }> = ({ children }
       snapshot.forEach(docSnap => {
         catList.push(docSnap.data() as Category);
       });
-      
+
       // If none in firestore, seed the defaults
       if (catList.length === 0) {
         defaultCategories.forEach(async c => {

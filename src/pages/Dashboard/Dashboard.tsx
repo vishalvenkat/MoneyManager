@@ -246,7 +246,16 @@ export const Dashboard: React.FC = () => {
                   {isTransfer ? <TrendingUp size={16} /> : (t.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />)}
                 </div>
                 <div className="recent-details">
-                  <div className="recent-title">{isTransfer ? 'Transfer' : category?.name || 'Uncategorized'}</div>
+                  <div className="recent-title">
+                    {isTransfer ? (
+                      'Transfer'
+                    ) : (
+                      <>
+                        {category?.name || 'Uncategorized'}
+                        {t.subcategory && <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}> • {t.subcategory}</span>}
+                      </>
+                    )}
+                  </div>
                   <div className="recent-date">{format(new Date(t.date), 'MMM dd, yyyy')}</div>
                 </div>
                 <div className={`recent-amount ${t.type}`}>

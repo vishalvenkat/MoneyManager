@@ -21,6 +21,7 @@ export const Transactions: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [categoryId, setCategoryId] = useState('');
+  const [subcategory, setSubcategory] = useState('');
   const [accountId, setAccountId] = useState('');
   const [fromAccountId, setFromAccountId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
@@ -33,6 +34,7 @@ export const Transactions: React.FC = () => {
       setAmount(transaction.amount.toString());
       setDate(transaction.date.split('T')[0]);
       setCategoryId(transaction.categoryId || '');
+      setSubcategory(transaction.subcategory || '');
       setAccountId(transaction.accountId || '');
       setFromAccountId(transaction.fromAccountId || '');
       setToAccountId(transaction.toAccountId || '');
@@ -42,7 +44,9 @@ export const Transactions: React.FC = () => {
       setType('expense');
       setAmount('');
       setDate(format(new Date(), 'yyyy-MM-dd'));
-      setCategoryId(categories.find(c => c.type === 'expense')?.id || '');
+      const defaultCat = categories.find(c => c.type === 'expense');
+      setCategoryId(defaultCat?.id || '');
+      setSubcategory('');
       setAccountId(accounts[0]?.id || '');
       setFromAccountId(accounts[0]?.id || '');
       setToAccountId(accounts[1]?.id || '');
@@ -75,6 +79,7 @@ export const Transactions: React.FC = () => {
       txData.toAccountId = toAccountId;
     } else {
       txData.categoryId = categoryId;
+      txData.subcategory = subcategory || undefined;
       txData.accountId = accountId;
     }
 
@@ -99,10 +104,14 @@ export const Transactions: React.FC = () => {
     return groups;
   }, [transactions]);
 
-  // Smart Budget Logic
+  // Smart Budget Logic & Subcategories helper
   const currentCategoryObj = useMemo(() => {
     return categories.find(c => c.id === categoryId);
   }, [categories, categoryId]);
+
+  const availableSubcategories = useMemo(() => {
+    return currentCategoryObj?.subcategories || [];
+  }, [currentCategoryObj]);
 
   const currentMonthCategorySpend = useMemo(() => {
     if (!currentCategoryObj || !currentCategoryObj.budget || type !== 'expense') return 0;
@@ -200,7 +209,14 @@ export const Transactions: React.FC = () => {
 
                       <div className="tx-details">
                         <div className="tx-title">
-                          {isTransfer ? 'Fund Transfer' : category?.name || 'Uncategorized'}
+                          {isTransfer ? (
+                            'Fund Transfer'
+                          ) : (
+                            <>
+                              {category?.name || 'Uncategorized'}
+                              {t.subcategory && <span className="tx-subcategory-tag"> • {t.subcategory}</span>}
+                            </>
+                          )}
                         </div>
                         <div className="tx-subtitle">
                           {isTransfer
@@ -252,7 +268,14 @@ export const Transactions: React.FC = () => {
                   key={tType}
                   type="button"
                   className={`toggle-btn ${type === tType ? 'active' : ''}`}
-                  onClick={() => setType(tType)}
+                  onClick={() => {
+                    setType(tType);
+                    const defCat = categories.find(c => c.type === tType);
+                    setCategoryId(defCat?.id || '');
+                    if (!defCat?.subcategories?.includes(subcategory)) {
+                      setSubcategory('');
+                    }
+                  }}
                 >
                   {tType.charAt(0).toUpperCase() + tType.slice(1)}
                 </button>
@@ -313,32 +336,57 @@ export const Transactions: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="form-row">
-              <div className="form-group flex-1">
-                <label className="form-label">Category</label>
-                <select
-                  className="form-input"
-                  value={categoryId}
-                  onChange={e => setCategoryId(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select Category</option>
-                  {categories.filter(c => c.type === type).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+            <>
+              <div className="form-row">
+                <div className="form-group flex-1">
+                  <label className="form-label">Category</label>
+                  <select
+                    className="form-input"
+                    value={categoryId}
+                    onChange={e => {
+                      const newCatId = e.target.value;
+                      setCategoryId(newCatId);
+                      const newCat = categories.find(c => c.id === newCatId);
+                      if (!newCat?.subcategories?.includes(subcategory)) {
+                        setSubcategory('');
+                      }
+                    }}
+                    required
+                  >
+                    <option value="" disabled>Select Category</option>
+                    {categories.filter(c => c.type === type).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group flex-1">
+                  <label className="form-label">Account</label>
+                  <select
+                    className="form-input"
+                    value={accountId}
+                    onChange={e => setAccountId(e.target.value)}
+                    required
+                  >
+                    <option value="" disabled>Select Account</option>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="form-group flex-1">
-                <label className="form-label">Account</label>
-                <select
-                  className="form-input"
-                  value={accountId}
-                  onChange={e => setAccountId(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select Account</option>
-                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-              </div>
-            </div>
+
+              {availableSubcategories.length > 0 && (
+                <div className="form-group">
+                  <label className="form-label">Subcategory (Optional)</label>
+                  <select
+                    className="form-input"
+                    value={subcategory}
+                    onChange={e => setSubcategory(e.target.value)}
+                  >
+                    <option value="">Select Subcategory (Optional)</option>
+                    {availableSubcategories.map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
           )}
 
           {renderBudgetAlert()}

@@ -73,6 +73,12 @@
   text-overflow: ellipsis;
 }
 
+.tx-subcategory-tag {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
 .tx-subtitle {
   font-size: 0.8125rem;
   color: var(--text-secondary);
