@@ -1,17 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
+import { useAuth } from '../../context/AuthContext';
 import type { Transaction, TransactionType } from '../../types';
-import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, Download, Upload, FileSpreadsheet, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import { format } from 'date-fns';
+import { excelService, type ImportSummary } from '../../services/excelService';
 import './Transactions.css';
 
 export const Transactions: React.FC = () => {
   const { transactions, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
   const { accounts } = useAccounts();
   const { categories } = useCategories();
+  const { currentUser } = useAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -26,6 +29,15 @@ export const Transactions: React.FC = () => {
   const [fromAccountId, setFromAccountId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Excel Import / Export State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ processed: number; total: number }>({ processed: 0, total: 0 });
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenModal = (transaction?: Transaction) => {
     if (transaction) {
@@ -63,8 +75,6 @@ export const Transactions: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = parseFloat(amount);
-
-    // Construct ISO date string (we just use YYYY-MM-DD representing that day)
     const isoDate = `${date}T12:00:00.000Z`;
 
     const txData: Omit<Transaction, 'id'> = {
@@ -79,7 +89,7 @@ export const Transactions: React.FC = () => {
       txData.toAccountId = toAccountId;
     } else {
       txData.categoryId = categoryId;
-      txData.subcategory = subcategory || undefined;
+      txData.subcategory = subcategory || '';
       txData.accountId = accountId;
     }
 
@@ -89,6 +99,63 @@ export const Transactions: React.FC = () => {
       addTransaction(txData);
     }
     handleCloseModal();
+  };
+
+  // Export Handler
+  const handleExportExcel = () => {
+    excelService.exportTransactionsToExcel(transactions, accounts, categories);
+  };
+
+  // Open / Close Import Modal
+  const handleOpenImportModal = () => {
+    setSelectedFile(null);
+    setIsImporting(false);
+    setImportProgress({ processed: 0, total: 0 });
+    setImportSummary(null);
+    setImportError(null);
+    setIsImportModalOpen(true);
+  };
+
+  const handleCloseImportModal = () => {
+    if (isImporting) return;
+    setIsImportModalOpen(false);
+    setSelectedFile(null);
+    setImportSummary(null);
+    setImportError(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+      setImportError(null);
+    }
+  };
+
+  // Start Import Process
+  const handleExecuteImport = async () => {
+    if (!selectedFile || !currentUser) return;
+
+    setIsImporting(true);
+    setImportError(null);
+    setImportProgress({ processed: 0, total: 0 });
+
+    try {
+      const summary = await excelService.importTransactionsFromExcel(
+        selectedFile,
+        currentUser.uid,
+        accounts,
+        categories,
+        (processed, total) => {
+          setImportProgress({ processed, total });
+        }
+      );
+      setImportSummary(summary);
+    } catch (err: any) {
+      console.error('Excel Import Error:', err);
+      setImportError(err.message || 'Failed to parse and import Excel file.');
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   // Group transactions by day
@@ -115,13 +182,13 @@ export const Transactions: React.FC = () => {
 
   const currentMonthCategorySpend = useMemo(() => {
     if (!currentCategoryObj || !currentCategoryObj.budget || type !== 'expense') return 0;
-    const baseDate = new Date(date); // Use the currently selected form date
-    
+    const baseDate = new Date(date);
+
     return transactions.reduce((sum, t) => {
       if (
-        t.type === 'expense' && 
-        t.categoryId === categoryId && 
-        (!editingTransaction || t.id !== editingTransaction.id) // Exclude the currently editing tx amount from the base sum
+        t.type === 'expense' &&
+        t.categoryId === categoryId &&
+        (!editingTransaction || t.id !== editingTransaction.id)
       ) {
         const txDate = new Date(t.date);
         if (txDate.getMonth() === baseDate.getMonth() && txDate.getFullYear() === baseDate.getFullYear()) {
@@ -175,14 +242,22 @@ export const Transactions: React.FC = () => {
     <div className="transactions-page">
       <div className="page-header">
         <h1 className="page-title">Transactions</h1>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          <Plus size={18} /> Add Transaction
-        </button>
+        <div className="header-actions">
+          <button className="btn btn-secondary" onClick={handleExportExcel} title="Export to Excel">
+            <Download size={16} /> Export Excel
+          </button>
+          <button className="btn btn-secondary" onClick={handleOpenImportModal} title="Import from Excel">
+            <Upload size={16} /> Import Excel
+          </button>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            <Plus size={18} /> Add Transaction
+          </button>
+        </div>
       </div>
 
       <div className="transactions-list">
         {Object.keys(groupedTransactions).length === 0 && (
-          <div className="card empty-state">No transactions recorded yet.</div>
+          <div className="card empty-state">No transactions recorded yet. Click "Import Excel" or "Add Transaction" to begin.</div>
         )}
 
         {Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).map(dateKey => {
@@ -254,6 +329,7 @@ export const Transactions: React.FC = () => {
         })}
       </div>
 
+      {/* Add / Edit Transaction Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -413,6 +489,138 @@ export const Transactions: React.FC = () => {
             </p>
           )}
         </form>
+      </Modal>
+
+      {/* Excel Import Modal */}
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={handleCloseImportModal}
+        title="Import Historical Transactions from Excel"
+      >
+        {!importSummary ? (
+          <div>
+            <p className="excel-import-description">
+              Upload your Excel file (.xlsx, .xls) or CSV. MoneyManager will automatically parse columns for
+              <strong> Date, Accounts, Category, Subcategory, Note, Amount, Income/Expense, Description</strong>,
+              and auto-create any new accounts or categories missing from your profile.
+            </p>
+
+            <div
+              className="excel-dropzone"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileSpreadsheet size={40} className="dropzone-icon" />
+              {selectedFile ? (
+                <div className="selected-file-name">{selectedFile.name}</div>
+              ) : (
+                <p>Click or drag Excel file here to upload</p>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx, .xls, .csv"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+            </div>
+
+            {importError && (
+              <div className="import-error-banner">
+                <AlertCircle size={18} />
+                <span>{importError}</span>
+              </div>
+            )}
+
+            {isImporting && (
+              <div className="import-progress-container">
+                <div className="progress-status-text">
+                  Processing row {importProgress.processed} of {importProgress.total}...
+                </div>
+                <div className="progress-bar-bg">
+                  <div
+                    className="progress-bar-fill"
+                    style={{
+                      width: importProgress.total > 0 ? `${(importProgress.processed / importProgress.total) * 100}%` : '0%'
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleCloseImportModal}
+                disabled={isImporting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleExecuteImport}
+                disabled={!selectedFile || isImporting}
+              >
+                {isImporting ? 'Importing...' : 'Start Import'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="import-summary-view">
+            <div className="summary-success-header">
+              <CheckCircle2 size={48} className="success-icon" />
+              <h3>Import Successfully Completed!</h3>
+            </div>
+
+            <div className="summary-metrics-grid">
+              <div className="summary-metric">
+                <span className="summary-val">{importSummary.totalImported}</span>
+                <span className="summary-lbl">Transactions Imported</span>
+              </div>
+              <div className="summary-metric">
+                <span className="summary-val">{importSummary.newAccountsCreated}</span>
+                <span className="summary-lbl">New Accounts Created</span>
+              </div>
+              <div className="summary-metric">
+                <span className="summary-val">{importSummary.newCategoriesCreated}</span>
+                <span className="summary-lbl">New Categories Created</span>
+              </div>
+            </div>
+
+            {importSummary.createdAccountNames.length > 0 && (
+              <div className="summary-list-section">
+                <strong>New Accounts Auto-Created:</strong>
+                <div className="summary-tags">
+                  {importSummary.createdAccountNames.map((name, idx) => (
+                    <span key={idx} className="summary-tag">{name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {importSummary.createdCategoryNames.length > 0 && (
+              <div className="summary-list-section">
+                <strong>New Categories Auto-Created:</strong>
+                <div className="summary-tags">
+                  {importSummary.createdCategoryNames.map((name, idx) => (
+                    <span key={idx} className="summary-tag">{name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleCloseImportModal}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

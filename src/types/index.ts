@@ -33,4 +33,5 @@ export type Transaction = {
   fromAccountId?: string; // For transfers
   toAccountId?: string; // For transfers
   notes?: string;
+  description?: string;
 };
