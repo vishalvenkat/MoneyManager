@@ -3,7 +3,7 @@ import { useCategories } from '../../context/CategoryContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useTransactions } from '../../context/TransactionContext';
 import type { Category, CategoryType } from '../../types';
-import { Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Target } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import './Settings.css';
 
@@ -126,38 +126,50 @@ export const Settings: React.FC = () => {
                 <div className="category-info">
                   <div
                     className="category-color-swatch"
-                    style={{ backgroundColor: cat.color || '#ccc' }}
+                    style={{ backgroundColor: cat.color || '#ccc', boxShadow: `0 0 10px ${cat.color}40` }}
                   />
-                  <span className="category-name">
-                    {cat.name}
-                    {cat.budget && (
-                      <span className="category-budget-badge">
-                        Target: ₹{cat.budget.toLocaleString('en-IN')}
-                      </span>
+                  <div className="category-name-group">
+                    <span className="category-name">{cat.name}</span>
+                    {cat.subcategories && cat.subcategories.length > 0 && (
+                      <span className="category-sub-count">{cat.subcategories.length} subcategories</span>
                     )}
-                  </span>
+                  </div>
                 </div>
-                <div className="category-actions">
-                  <button className="icon-btn-small" onClick={() => handleOpenModal(cat)} title="Edit Category">
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    className="icon-btn-small delete-btn"
-                    onClick={() => {
-                      if (window.confirm('Delete this category?')) {
-                        deleteCategory(cat.id);
-                      }
-                    }}
-                    title="Delete Category"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+
+                <div className="category-right-side">
+                  {cat.type === 'expense' && (
+                    <div className={`category-budget-badge ${cat.budget ? 'has-budget' : 'no-budget'}`}>
+                      <Target size={13} className="budget-icon" />
+                      <div className="budget-details">
+                        <span className="budget-label">{cat.budget ? 'Monthly Limit' : 'No Budget Set'}</span>
+                        {cat.budget ? (
+                          <span className="budget-value">₹{cat.budget.toLocaleString('en-IN')}</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="category-actions">
+                    <button className="icon-btn-small" onClick={() => handleOpenModal(cat)} title="Edit Category">
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      className="icon-btn-small delete-btn"
+                      onClick={() => {
+                        if (window.confirm('Delete this category?')) {
+                          deleteCategory(cat.id);
+                        }
+                      }}
+                      title="Delete Category"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {cat.subcategories && cat.subcategories.length > 0 && (
                 <div className="subcategories-chips">
-                  <span className="subcategories-label">Subcategories:</span>
                   {cat.subcategories.map(sub => (
                     <span key={sub} className="subcategory-chip">
                       {sub}
