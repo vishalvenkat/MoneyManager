@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useCategories } from '../../context/CategoryContext';
-import { useAccounts } from '../../context/AccountContext';
-import { useTransactions } from '../../context/TransactionContext';
 import type { Category, CategoryType } from '../../types';
 import { Plus, Edit2, Trash2, X, Target } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
@@ -9,8 +7,6 @@ import './Settings.css';
 
 export const Settings: React.FC = () => {
   const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
-  const { accounts } = useAccounts();
-  const { transactions } = useTransactions();
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -185,35 +181,6 @@ export const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="card categories-card">
-        <div className="page-header" style={{ marginBottom: '1rem' }}>
-          <h2 className="page-title" style={{ fontSize: '1.25rem' }}>Data Management</h2>
-        </div>
-        <div className="settings-section">
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Export your application data (accounts, categories, transactions) to a JSON file for backup.</p>
-          <button
-            className="btn btn-secondary"
-            onClick={() => {
-              const data = {
-                accounts,
-                categories,
-                transactions
-              };
-              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `expense_tracker_backup_${new Date().toISOString().split('T')[0]}.json`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-            }}
-          >
-            Export to JSON
-          </button>
-        </div>
-      </div>
 
       <Modal
         isOpen={isModalOpen}

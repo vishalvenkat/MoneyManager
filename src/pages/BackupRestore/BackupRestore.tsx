@@ -4,8 +4,9 @@ import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
 import { useAuth } from '../../context/AuthContext';
 import { excelService, type ImportSummary } from '../../services/excelService';
+import { jsonBackupService, type ValidatedBackupData } from '../../services/jsonBackupService';
 import { Modal } from '../../components/Modal/Modal';
-import { Download, Upload, FileText, Database, FileSpreadsheet, CheckCircle2, AlertCircle, Filter } from 'lucide-react';
+import { Download, Upload, FileText, Database, FileSpreadsheet, CheckCircle2, AlertCircle, Filter, AlertTriangle, RefreshCw, FileCode } from 'lucide-react';
 import { subMonths, format } from 'date-fns';
 import { getAvailableYears } from '../../utils/reportUtils';
 import './BackupRestore.css';
@@ -33,6 +34,16 @@ export const BackupRestore: React.FC = () => {
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // JSON Restore State
+  const [jsonFile, setJsonFile] = useState<File | null>(null);
+  const [validatedJsonData, setValidatedJsonData] = useState<ValidatedBackupData | null>(null);
+  const [jsonParseError, setJsonParseError] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreStatusMessage, setRestoreStatusMessage] = useState<string>('');
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
   // Dynamic list of available years for monthly export filter
   const availableYears = useMemo(() => getAvailableYears(transactions), [transactions]);
@@ -121,7 +132,7 @@ export const BackupRestore: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Open / Close Import Modal
+  // Excel Import File Handler
   const handleOpenImportModal = () => {
     setSelectedFile(null);
     setIsImporting(false);
@@ -139,14 +150,14 @@ export const BackupRestore: React.FC = () => {
     setImportError(null);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
       setImportError(null);
     }
   };
 
-  // Execute Import
+  // Execute Excel Import
   const handleExecuteImport = async () => {
     if (!selectedFile || !currentUser) return;
 
@@ -170,6 +181,63 @@ export const BackupRestore: React.FC = () => {
       setImportError(err.message || 'Failed to parse and import Excel file.');
     } finally {
       setIsImporting(false);
+    }
+  };
+
+  // --- JSON Restore Handlers ---
+  const handleJsonFileSelect = (file: File) => {
+    setJsonFile(file);
+    setJsonParseError(null);
+    setValidatedJsonData(null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const validated = jsonBackupService.validateBackupJSON(text);
+        setValidatedJsonData(validated);
+      } catch (err: any) {
+        setJsonParseError(err.message || 'Failed to parse JSON backup file.');
+        setValidatedJsonData(null);
+      }
+    };
+    reader.onerror = () => {
+      setJsonParseError('Failed to read selected file.');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleJsonInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleJsonFileSelect(e.target.files[0]);
+    }
+  };
+
+  const handleOpenConfirmModal = () => {
+    if (!validatedJsonData) return;
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleExecuteJsonRestore = async () => {
+    if (!currentUser || !validatedJsonData) return;
+
+    setIsRestoring(true);
+    setRestoreStatusMessage('Initializing restoration...');
+
+    try {
+      await jsonBackupService.restoreFromJSON(
+        currentUser.uid,
+        validatedJsonData,
+        (status) => setRestoreStatusMessage(status)
+      );
+      setIsConfirmModalOpen(false);
+      setIsSuccessModalOpen(true);
+    } catch (err: any) {
+      console.error('JSON Restore Error:', err);
+      setJsonParseError(err.message || 'Failed to restore data from JSON backup file.');
+      setIsConfirmModalOpen(false);
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -316,7 +384,7 @@ export const BackupRestore: React.FC = () => {
               <Upload size={22} />
             </div>
             <div>
-              <h2>Import & Migration</h2>
+              <h2>Excel Import & Migration</h2>
               <p>Upload Excel files to import multi-year historical data. Missing accounts & categories are created automatically.</p>
             </div>
           </div>
@@ -341,26 +409,87 @@ export const BackupRestore: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Data Backup & JSON Export */}
+        {/* Card 3: Full JSON Backup & Restore */}
         <div className="card backup-card">
           <div className="backup-card-header">
             <div className="icon-badge icon-badge-warning">
               <Database size={22} />
             </div>
             <div>
-              <h2>Full JSON Backup</h2>
-              <p>Export a complete snapshot of all accounts, categories, and raw transactions in JSON format for offline storage.</p>
+              <h2>Full JSON Backup & Restore</h2>
+              <p>Export a complete offline snapshot or restore a previously saved JSON backup to replace existing profile data.</p>
             </div>
           </div>
 
-          <div>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={handleExportJSON}
-            >
-              <Database size={16} /> Export Full JSON Backup
-            </button>
+          <div className="json-sections-grid">
+            {/* JSON Export Action */}
+            <div className="json-action-box">
+              <div className="json-box-info">
+                <h3>Export JSON Backup</h3>
+                <p>Save all accounts, categories, and transactions into a single JSON document.</p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleExportJSON}
+              >
+                <Database size={16} /> Export JSON Backup
+              </button>
+            </div>
+
+            {/* JSON Restore Dropzone & Action */}
+            <div className="json-action-box json-restore-box">
+              <div className="json-box-info">
+                <h3>Restore from JSON Backup</h3>
+                <p>Upload a JSON backup file to overwrite current profile data.</p>
+              </div>
+
+              <div
+                className="json-dropzone"
+                onClick={() => jsonFileInputRef.current?.click()}
+              >
+                <FileCode size={36} className="dropzone-icon" />
+                {jsonFile ? (
+                  <div className="selected-json-details">
+                    <span className="file-name">{jsonFile.name}</span>
+                    {validatedJsonData && (
+                      <div className="preview-badges">
+                        <span className="badge">{validatedJsonData.accounts.length} Accounts</span>
+                        <span className="badge">{validatedJsonData.categories.length} Categories</span>
+                        <span className="badge">{validatedJsonData.transactions.length} Transactions</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p>Click or drag .json backup file here to select</p>
+                )}
+                <input
+                  ref={jsonFileInputRef}
+                  type="file"
+                  accept=".json"
+                  style={{ display: 'none' }}
+                  onChange={handleJsonInputChange}
+                />
+              </div>
+
+              {jsonParseError && (
+                <div className="import-error-banner">
+                  <AlertCircle size={18} />
+                  <span>{jsonParseError}</span>
+                </div>
+              )}
+
+              <div className="json-restore-btn-row">
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleOpenConfirmModal}
+                  disabled={!validatedJsonData || isRestoring}
+                >
+                  <RefreshCw size={16} /> Restore from JSON Backup
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -402,7 +531,7 @@ export const BackupRestore: React.FC = () => {
                 type="file"
                 accept=".xlsx, .xls, .csv"
                 style={{ display: 'none' }}
-                onChange={handleFileChange}
+                onChange={handleExcelFileChange}
               />
             </div>
 
@@ -503,6 +632,100 @@ export const BackupRestore: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* JSON Restore Destructive Confirmation Modal */}
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => !isRestoring && setIsConfirmModalOpen(false)}
+        title="Confirm Full Data Restoration"
+      >
+        <div className="restore-confirm-dialog">
+          <div className="warning-callout-header">
+            <AlertTriangle size={40} className="warning-icon-danger" />
+            <div>
+              <h3 className="warning-title-danger">Warning: Destructive Action</h3>
+              <p className="warning-text-danger">
+                Restoring from a JSON backup will <strong>permanently delete all your current transactions, accounts, categories, and settings</strong>, and replace them with the data from this backup file. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          {validatedJsonData && (
+            <div className="restore-preview-summary">
+              <h4>Backup Content to Restore:</h4>
+              <div className="summary-metrics-grid">
+                <div className="summary-metric">
+                  <span className="summary-val">{validatedJsonData.accounts.length}</span>
+                  <span className="summary-lbl">Accounts</span>
+                </div>
+                <div className="summary-metric">
+                  <span className="summary-val">{validatedJsonData.categories.length}</span>
+                  <span className="summary-lbl">Categories</span>
+                </div>
+                <div className="summary-metric">
+                  <span className="summary-val">{validatedJsonData.transactions.length}</span>
+                  <span className="summary-lbl">Transactions</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isRestoring && (
+            <div className="import-progress-container" style={{ marginTop: '1rem' }}>
+              <div className="progress-status-text" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <RefreshCw size={16} className="spin-icon" />
+                <span>{restoreStatusMessage} Please do not close this window.</span>
+              </div>
+            </div>
+          )}
+
+          <div className="modal-footer">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setIsConfirmModalOpen(false)}
+              disabled={isRestoring}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={handleExecuteJsonRestore}
+              disabled={isRestoring}
+            >
+              {isRestoring ? 'Restoring Data...' : 'Confirm Restore'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* JSON Restore Success Modal */}
+      <Modal
+        isOpen={isSuccessModalOpen}
+        onClose={() => window.location.reload()}
+        title="Restoration Complete"
+      >
+        <div className="import-summary-view">
+          <div className="summary-success-header">
+            <CheckCircle2 size={48} className="success-icon" />
+            <h3>Data Successfully Restored!</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+              Your database has been updated with the backup records. Click below to refresh your dashboard.
+            </p>
+          </div>
+
+          <div className="modal-footer">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => window.location.reload()}
+            >
+              Finish & Refresh Application
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
