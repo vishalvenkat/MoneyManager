@@ -3,7 +3,7 @@ import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
 import type { Transaction, TransactionType } from '../../types';
-import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX, ChevronLeft, ChevronRight, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import { format } from 'date-fns';
 import { getAvailableFilterCounts, matchesFiltersExcept, type ActiveFilters } from '../../utils/filterUtils';
@@ -28,7 +28,8 @@ export const Transactions: React.FC = () => {
   const [toAccountId, setToAccountId] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Filtering State
+  // Filtering State & Panel Collapse Toggle
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [filterAccount, setFilterAccount] = useState('all');
@@ -39,6 +40,18 @@ export const Transactions: React.FC = () => {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  // Active filter count calculation
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (startDate) count++;
+    if (endDate) count++;
+    if (filterAccount !== 'all') count++;
+    if (filterCategory !== 'all') count++;
+    if (filterSubcategory !== 'all') count++;
+    if (filterType !== 'all') count++;
+    return count;
+  }, [startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType]);
 
   // Collect all unique subcategories across categories and transactions
   const allSubcategories = useMemo(() => {
@@ -73,7 +86,7 @@ export const Transactions: React.FC = () => {
     );
   }, [transactions, accounts, categories, allSubcategories, activeFilters]);
 
-  // Filter transactions based on active filters
+  // Filter transactions based on active filters (state retention works even when panel is hidden)
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => matchesFiltersExcept(t, activeFilters));
   }, [transactions, activeFilters]);
@@ -107,14 +120,7 @@ export const Transactions: React.FC = () => {
     return groups;
   }, [paginatedTransactions]);
 
-  const hasActiveFilters = Boolean(
-    startDate ||
-    endDate ||
-    filterAccount !== 'all' ||
-    filterCategory !== 'all' ||
-    filterSubcategory !== 'all' ||
-    filterType !== 'all'
-  );
+  const hasActiveFilters = activeFilterCount > 0;
 
   const handleClearFilters = () => {
     setStartDate('');
@@ -188,7 +194,6 @@ export const Transactions: React.FC = () => {
     handleCloseModal();
   };
 
-
   // Smart Budget Logic & Subcategories helper
   const currentCategoryObj = useMemo(() => {
     return categories.find(c => c.id === categoryId);
@@ -261,133 +266,152 @@ export const Transactions: React.FC = () => {
       <div className="page-header">
         <h1 className="page-title">Transactions</h1>
         <div className="header-actions">
-          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+          {/* Collapsible Filter Toggle Button */}
+          <button
+            type="button"
+            className={`btn ${isFilterOpen ? 'btn-primary' : 'btn-secondary'} btn-toggle-filter`}
+            onClick={() => setIsFilterOpen(prev => !prev)}
+            title={isFilterOpen ? "Hide Filters" : "Show Filters"}
+          >
+            <Filter size={18} />
+            <span>{isFilterOpen ? 'Hide Filters' : 'Filter'}</span>
+            {activeFilterCount > 0 && (
+              <span className="active-filter-badge">{activeFilterCount}</span>
+            )}
+            {isFilterOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {/* Desktop Add Transaction Button */}
+          <button className="btn btn-primary header-btn-desktop" onClick={() => handleOpenModal()}>
             <Plus size={18} /> Add Transaction
           </button>
         </div>
       </div>
 
-      {/* Advanced Filtering Toolbar */}
-      <div className="filter-toolbar card">
-        <div className="filter-toolbar-header">
-          <div className="filter-title">
-            <Filter size={16} /> Filter Transactions
-          </div>
-          {hasActiveFilters && (
-            <button className="btn-clear-filters" onClick={handleClearFilters}>
-              <FilterX size={14} /> Clear Filters
-            </button>
-          )}
-        </div>
-
-        <div className="filter-grid">
-          <div className="filter-item">
-            <label className="filter-label">From Date</label>
-            <input
-              type="date"
-              className="filter-input"
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-            />
+      {/* Collapsible Filtering Toolbar */}
+      <div className={`filter-collapsible-wrapper ${isFilterOpen ? 'open' : 'closed'}`}>
+        <div className="filter-toolbar card">
+          <div className="filter-toolbar-header">
+            <div className="filter-title">
+              <Filter size={16} /> Filter Criteria
+            </div>
+            {hasActiveFilters && (
+              <button className="btn-clear-filters" onClick={handleClearFilters}>
+                <FilterX size={14} /> Clear Filters ({activeFilterCount})
+              </button>
+            )}
           </div>
 
-          <div className="filter-item">
-            <label className="filter-label">To Date</label>
-            <input
-              type="date"
-              className="filter-input"
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-            />
-          </div>
-
-          <div className="filter-item">
-            <label className="filter-label">Account</label>
-            <select
-              className="filter-select"
-              value={filterAccount}
-              onChange={e => setFilterAccount(e.target.value)}
-            >
-              <option value="all">All Accounts ({filterCounts.totalAccountsCount})</option>
-              {accounts.map(acc => {
-                const count = filterCounts.accountCounts[acc.id] || 0;
-                return (
-                  <option key={acc.id} value={acc.id} disabled={count === 0}>
-                    {acc.name} ({count})
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          <div className="filter-item">
-            <label className="filter-label">Category</label>
-            <select
-              className="filter-select"
-              value={filterCategory}
-              onChange={e => setFilterCategory(e.target.value)}
-            >
-              <option value="all">All Categories ({filterCounts.totalCategoriesCount})</option>
-              {categories.map(cat => {
-                const count = filterCounts.categoryCounts[cat.id] || 0;
-                return (
-                  <option key={cat.id} value={cat.id} disabled={count === 0}>
-                    {cat.name} ({count})
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          {allSubcategories.length > 0 && (
+          <div className="filter-grid">
             <div className="filter-item">
-              <label className="filter-label">Subcategory</label>
+              <label className="filter-label">From Date</label>
+              <input
+                type="date"
+                className="filter-input"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+              />
+            </div>
+
+            <div className="filter-item">
+              <label className="filter-label">To Date</label>
+              <input
+                type="date"
+                className="filter-input"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+              />
+            </div>
+
+            <div className="filter-item">
+              <label className="filter-label">Account</label>
               <select
                 className="filter-select"
-                value={filterSubcategory}
-                onChange={e => setFilterSubcategory(e.target.value)}
+                value={filterAccount}
+                onChange={e => setFilterAccount(e.target.value)}
               >
-                <option value="all">All Subcategories ({filterCounts.totalSubcategoriesCount})</option>
-                {allSubcategories.map(sub => {
-                  const count = filterCounts.subcategoryCounts[sub] || 0;
+                <option value="all">All Accounts ({filterCounts.totalAccountsCount})</option>
+                {accounts.map(acc => {
+                  const count = filterCounts.accountCounts[acc.id] || 0;
                   return (
-                    <option key={sub} value={sub} disabled={count === 0}>
-                      {sub} ({count})
+                    <option key={acc.id} value={acc.id} disabled={count === 0}>
+                      {acc.name} ({count})
                     </option>
                   );
                 })}
               </select>
             </div>
-          )}
 
-          <div className="filter-item">
-            <label className="filter-label">Type</label>
-            <select
-              className="filter-select"
-              value={filterType}
-              onChange={e => setFilterType(e.target.value)}
-            >
-              <option value="all">All Types ({filterCounts.totalTypesCount})</option>
-              <option value="expense" disabled={(filterCounts.typeCounts.expense || 0) === 0}>
-                Expense ({(filterCounts.typeCounts.expense || 0)})
-              </option>
-              <option value="income" disabled={(filterCounts.typeCounts.income || 0) === 0}>
-                Income ({(filterCounts.typeCounts.income || 0)})
-              </option>
-              <option value="transfer" disabled={(filterCounts.typeCounts.transfer || 0) === 0}>
-                Transfer ({(filterCounts.typeCounts.transfer || 0)})
-              </option>
-            </select>
+            <div className="filter-item">
+              <label className="filter-label">Category</label>
+              <select
+                className="filter-select"
+                value={filterCategory}
+                onChange={e => setFilterCategory(e.target.value)}
+              >
+                <option value="all">All Categories ({filterCounts.totalCategoriesCount})</option>
+                {categories.map(cat => {
+                  const count = filterCounts.categoryCounts[cat.id] || 0;
+                  return (
+                    <option key={cat.id} value={cat.id} disabled={count === 0}>
+                      {cat.name} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {allSubcategories.length > 0 && (
+              <div className="filter-item">
+                <label className="filter-label">Subcategory</label>
+                <select
+                  className="filter-select"
+                  value={filterSubcategory}
+                  onChange={e => setFilterSubcategory(e.target.value)}
+                >
+                  <option value="all">All Subcategories ({filterCounts.totalSubcategoriesCount})</option>
+                  {allSubcategories.map(sub => {
+                    const count = filterCounts.subcategoryCounts[sub] || 0;
+                    return (
+                      <option key={sub} value={sub} disabled={count === 0}>
+                        {sub} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+
+            <div className="filter-item">
+              <label className="filter-label">Type</label>
+              <select
+                className="filter-select"
+                value={filterType}
+                onChange={e => setFilterType(e.target.value)}
+              >
+                <option value="all">All Types ({filterCounts.totalTypesCount})</option>
+                <option value="expense" disabled={(filterCounts.typeCounts.expense || 0) === 0}>
+                  Expense ({(filterCounts.typeCounts.expense || 0)})
+                </option>
+                <option value="income" disabled={(filterCounts.typeCounts.income || 0) === 0}>
+                  Income ({(filterCounts.typeCounts.income || 0)})
+                </option>
+                <option value="transfer" disabled={(filterCounts.typeCounts.transfer || 0) === 0}>
+                  Transfer ({(filterCounts.typeCounts.transfer || 0)})
+                </option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Transactions List */}
       <div className="transactions-list">
         {totalItems === 0 && (
           <div className="card empty-state">
             {hasActiveFilters
               ? "No transactions match your filter criteria."
-              : "No transactions recorded yet. Click \"Import Excel\" or \"Add Transaction\" to begin."}
+              : "No transactions recorded yet. Go to Backup & Restore to import records or click \"Add Transaction\" to begin."}
           </div>
         )}
 
@@ -508,6 +532,17 @@ export const Transactions: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile Floating Action Button (FAB) */}
+      <button
+        type="button"
+        className="fab-add-transaction"
+        onClick={() => handleOpenModal()}
+        title="Add Transaction"
+        aria-label="Add Transaction"
+      >
+        <Plus size={26} />
+      </button>
 
       {/* Add / Edit Transaction Modal */}
       <Modal
