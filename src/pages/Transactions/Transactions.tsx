@@ -1,13 +1,11 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
-import { useAuth } from '../../context/AuthContext';
 import type { Transaction, TransactionType } from '../../types';
-import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, Download, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, FileText, FilterX, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import { format } from 'date-fns';
-import { excelService, type ImportSummary } from '../../services/excelService';
 import { getAvailableFilterCounts, matchesFiltersExcept, type ActiveFilters } from '../../utils/filterUtils';
 import './Transactions.css';
 
@@ -15,7 +13,6 @@ export const Transactions: React.FC = () => {
   const { transactions, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
   const { accounts } = useAccounts();
   const { categories } = useCategories();
-  const { currentUser } = useAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -42,15 +39,6 @@ export const Transactions: React.FC = () => {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-
-  // Excel Import / Export State
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState<{ processed: number; total: number }>({ processed: 0, total: 0 });
-  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Collect all unique subcategories across categories and transactions
   const allSubcategories = useMemo(() => {
@@ -200,67 +188,6 @@ export const Transactions: React.FC = () => {
     handleCloseModal();
   };
 
-  // Export Handler
-  const handleExportExcel = () => {
-    excelService.exportTransactionsToExcel(transactions, accounts, categories);
-  };
-
-  // Download Template Handler
-  const handleDownloadTemplate = () => {
-    excelService.downloadExcelTemplate();
-  };
-
-  // Open / Close Import Modal
-  const handleOpenImportModal = () => {
-    setSelectedFile(null);
-    setIsImporting(false);
-    setImportProgress({ processed: 0, total: 0 });
-    setImportSummary(null);
-    setImportError(null);
-    setIsImportModalOpen(true);
-  };
-
-  const handleCloseImportModal = () => {
-    if (isImporting) return;
-    setIsImportModalOpen(false);
-    setSelectedFile(null);
-    setImportSummary(null);
-    setImportError(null);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-      setImportError(null);
-    }
-  };
-
-  // Start Import Process
-  const handleExecuteImport = async () => {
-    if (!selectedFile || !currentUser) return;
-
-    setIsImporting(true);
-    setImportError(null);
-    setImportProgress({ processed: 0, total: 0 });
-
-    try {
-      const summary = await excelService.importTransactionsFromExcel(
-        selectedFile,
-        currentUser.uid,
-        accounts,
-        categories,
-        (processed, total) => {
-          setImportProgress({ processed, total });
-        }
-      );
-      setImportSummary(summary);
-    } catch (err: any) {
-      console.error('Excel Import Error:', err);
-      setImportError(err.message || 'Failed to parse and import Excel file.');
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   // Smart Budget Logic & Subcategories helper
   const currentCategoryObj = useMemo(() => {
@@ -334,15 +261,6 @@ export const Transactions: React.FC = () => {
       <div className="page-header">
         <h1 className="page-title">Transactions</h1>
         <div className="header-actions">
-          <button className="btn btn-secondary" onClick={handleDownloadTemplate} title="Download Excel Import Template">
-            <FileText size={16} /> Download Template
-          </button>
-          <button className="btn btn-secondary" onClick={handleExportExcel} title="Export to Excel">
-            <Download size={16} /> Export Excel
-          </button>
-          <button className="btn btn-secondary" onClick={handleOpenImportModal} title="Import from Excel">
-            <Upload size={16} /> Import Excel
-          </button>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
             <Plus size={18} /> Add Transaction
           </button>
@@ -751,146 +669,6 @@ export const Transactions: React.FC = () => {
             </p>
           )}
         </form>
-      </Modal>
-
-      {/* Excel Import Modal */}
-      <Modal
-        isOpen={isImportModalOpen}
-        onClose={handleCloseImportModal}
-        title="Import Historical Transactions from Excel"
-      >
-        {!importSummary ? (
-          <div>
-            <p className="excel-import-description">
-              Upload your Excel file (.xlsx, .xls) or CSV. MoneyManager will automatically parse columns for
-              <strong> Date, Accounts, Category, Subcategory, Note, Amount, Income/Expense, Description</strong>,
-              and auto-create any new accounts or categories missing from your profile.
-              <button
-                type="button"
-                className="btn-link"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginLeft: '0.5rem', color: 'var(--accent-primary)', fontWeight: 600 }}
-                onClick={handleDownloadTemplate}
-              >
-                <FileText size={14} /> Download Sample Template
-              </button>
-            </p>
-
-            <div
-              className="excel-dropzone"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FileSpreadsheet size={40} className="dropzone-icon" />
-              {selectedFile ? (
-                <div className="selected-file-name">{selectedFile.name}</div>
-              ) : (
-                <p>Click or drag Excel file here to upload</p>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx, .xls, .csv"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
-            </div>
-
-            {importError && (
-              <div className="import-error-banner">
-                <AlertCircle size={18} />
-                <span>{importError}</span>
-              </div>
-            )}
-
-            {isImporting && (
-              <div className="import-progress-container">
-                <div className="progress-status-text">
-                  Processing row {importProgress.processed} of {importProgress.total}...
-                </div>
-                <div className="progress-bar-bg">
-                  <div
-                    className="progress-bar-fill"
-                    style={{
-                      width: importProgress.total > 0 ? `${(importProgress.processed / importProgress.total) * 100}%` : '0%'
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleCloseImportModal}
-                disabled={isImporting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleExecuteImport}
-                disabled={!selectedFile || isImporting}
-              >
-                {isImporting ? 'Importing...' : 'Start Import'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="import-summary-view">
-            <div className="summary-success-header">
-              <CheckCircle2 size={48} className="success-icon" />
-              <h3>Import Successfully Completed!</h3>
-            </div>
-
-            <div className="summary-metrics-grid">
-              <div className="summary-metric">
-                <span className="summary-val">{importSummary.totalImported}</span>
-                <span className="summary-lbl">Transactions Imported</span>
-              </div>
-              <div className="summary-metric">
-                <span className="summary-val">{importSummary.newAccountsCreated}</span>
-                <span className="summary-lbl">New Accounts Created</span>
-              </div>
-              <div className="summary-metric">
-                <span className="summary-val">{importSummary.newCategoriesCreated}</span>
-                <span className="summary-lbl">New Categories Created</span>
-              </div>
-            </div>
-
-            {importSummary.createdAccountNames.length > 0 && (
-              <div className="summary-list-section">
-                <strong>New Accounts Auto-Created:</strong>
-                <div className="summary-tags">
-                  {importSummary.createdAccountNames.map((name, idx) => (
-                    <span key={idx} className="summary-tag">{name}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {importSummary.createdCategoryNames.length > 0 && (
-              <div className="summary-list-section">
-                <strong>New Categories Auto-Created:</strong>
-                <div className="summary-tags">
-                  {importSummary.createdCategoryNames.map((name, idx) => (
-                    <span key={idx} className="summary-tag">{name}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleCloseImportModal}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        )}
       </Modal>
     </div>
   );

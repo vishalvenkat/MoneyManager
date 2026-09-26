@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Wallet, CalendarDays, ArrowRightLeft, PieChart, Settings, WalletCards, X } from 'lucide-react';
+import { LayoutDashboard, Wallet, CalendarDays, ArrowRightLeft, PieChart, Settings, WalletCards, X, Database } from 'lucide-react';
 import './Sidebar.css';
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/accounts', label: 'Accounts', icon: <WalletCards size={20} /> },
     { path: '/reports', label: 'Reports', icon: <PieChart size={20} /> },
     { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
+    { path: '/backup-restore', label: 'Backup & Restore', icon: <Database size={20} /> },
   ];
 
   return (

@@ -9,6 +9,7 @@ import { CalendarView } from './pages/CalendarView/CalendarView';
 import { Accounts } from './pages/Accounts/Accounts';
 import { Reports } from './pages/Reports/Reports';
 import { Settings } from './pages/Settings/Settings';
+import { BackupRestore } from './pages/BackupRestore/BackupRestore';
 import { AuthPage } from './pages/Auth/AuthPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -29,6 +30,7 @@ function App() {
             <Route path="accounts" element={<Accounts />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="backup-restore" element={<BackupRestore />} />
           </Route>
         </Routes>
       </BrowserRouter>
