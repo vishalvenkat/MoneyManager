@@ -19,6 +19,20 @@ export const expenseService = {
   },
   getAccountRef: (uid: string, accountId: string) => doc(db, 'users', uid, 'accounts', accountId),
 
+  // --- Account Groups ---
+  addAccountGroup: async (uid: string, group: any) => {
+    const docRef = doc(collection(db, 'users', uid, 'accountGroups'), group.id);
+    await setDoc(docRef, group);
+  },
+  updateAccountGroup: async (uid: string, groupId: string, data: any) => {
+    const docRef = doc(db, 'users', uid, 'accountGroups', groupId);
+    await updateDoc(docRef, data);
+  },
+  deleteAccountGroup: async (uid: string, groupId: string) => {
+    const docRef = doc(db, 'users', uid, 'accountGroups', groupId);
+    await deleteDoc(docRef);
+  },
+
   // --- Categories ---
   addCategory: async (uid: string, category: any) => {
     const docRef = doc(collection(db, 'users', uid, 'categories'), category.id);
@@ -49,7 +63,7 @@ export const expenseService = {
 
   // --- Reset User Data ---
   resetUserData: async (uid: string) => {
-    const collectionsToDelete = ['transactions', 'accounts', 'categories'];
+    const collectionsToDelete = ['transactions', 'accounts', 'categories', 'accountGroups'];
     for (const colName of collectionsToDelete) {
       const colRef = collection(db, 'users', uid, colName);
       const snapshot = await getDocs(colRef);

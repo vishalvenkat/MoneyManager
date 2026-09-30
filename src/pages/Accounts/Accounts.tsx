@@ -1,47 +1,59 @@
 import React, { useState, useMemo } from 'react';
 import { useAccounts } from '../../context/AccountContext';
-import { Plus, Edit2, Trash2, Wallet, CreditCard, Landmark } from 'lucide-react';
+import { Plus, Edit2, Trash2, Wallet, CreditCard, Landmark, PiggyBank, Building, Smartphone, Briefcase, Settings2 } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import type { Account, AccountGroup } from '../../types';
 import './Accounts.css';
 
-const ACCOUNT_GROUPS: AccountGroup[] = ['Cash', 'Debit Card', 'Credit Card', 'Savings'];
-
-const getGroupIcon = (group: AccountGroup) => {
-  switch (group) {
-    case 'Cash':
-      return <Wallet size={20} />;
-    case 'Debit Card':
-      return <CreditCard size={20} />;
-    case 'Credit Card':
-      return <CreditCard size={20} />;
-    case 'Savings':
-      return <Landmark size={20} />;
-    default:
-      return <Wallet size={20} />;
-  }
+const AVAILABLE_ICONS: Record<string, React.ReactNode> = {
+  Wallet: <Wallet size={20} />,
+  CreditCard: <CreditCard size={20} />,
+  Landmark: <Landmark size={20} />,
+  PiggyBank: <PiggyBank size={20} />,
+  Building: <Building size={20} />,
+  Smartphone: <Smartphone size={20} />,
+  Briefcase: <Briefcase size={20} />,
 };
 
 export const Accounts: React.FC = () => {
-  const { accounts, addAccount, updateAccount, deleteAccount } = useAccounts();
+  const { 
+    accounts, accountGroups, 
+    addAccount, updateAccount, deleteAccount,
+    addAccountGroup, updateAccountGroup, deleteAccountGroup 
+  } = useAccounts();
+
+  // Account Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-
-  // Form State
   const [name, setName] = useState('');
-  const [group, setGroup] = useState<AccountGroup>('Cash');
+  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [currentBalance, setCurrentBalance] = useState('');
 
-  const handleOpenModal = (account?: Account, defaultGroup?: AccountGroup) => {
+  // Group Management Modal State
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  
+  // Group Create/Edit State
+  const [isEditingGroup, setIsEditingGroup] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [groupName, setGroupName] = useState('');
+  const [groupIcon, setGroupIcon] = useState('Wallet');
+
+  const handleOpenModal = (account?: Account, defaultGroupId?: string) => {
     if (account) {
       setEditingAccount(account);
       setName(account.name);
-      setGroup(account.group || 'Cash');
+      
+      let matchedGroupId = account.groupId;
+      if (!matchedGroupId && account.group) {
+         const found = accountGroups.find(g => g.name === account.group);
+         if (found) matchedGroupId = found.id;
+      }
+      setSelectedGroupId(matchedGroupId || (accountGroups[0]?.id ?? ''));
       setCurrentBalance((account.currentBalance ?? account.initialBalance ?? 0).toString());
     } else {
       setEditingAccount(null);
       setName('');
-      setGroup(defaultGroup || 'Cash');
+      setSelectedGroupId(defaultGroupId || (accountGroups[0]?.id ?? ''));
       setCurrentBalance('');
     }
     setIsModalOpen(true);
@@ -55,18 +67,22 @@ export const Accounts: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const balanceNum = parseFloat(currentBalance) || 0;
+    
+    const selectedGroupObj = accountGroups.find(g => g.id === selectedGroupId);
 
     if (editingAccount) {
       updateAccount(editingAccount.id, {
         name,
-        group,
+        groupId: selectedGroupId,
+        group: selectedGroupObj?.name || '', // Legacy sync
         initialBalance: balanceNum,
         currentBalance: balanceNum,
       });
     } else {
       addAccount({
         name,
-        group,
+        groupId: selectedGroupId,
+        group: selectedGroupObj?.name || '', // Legacy sync
         initialBalance: balanceNum,
         currentBalance: balanceNum,
       });
@@ -74,40 +90,83 @@ export const Accounts: React.FC = () => {
     handleCloseModal();
   };
 
+  const handleOpenGroupModal = () => {
+    setIsGroupModalOpen(true);
+    resetGroupForm();
+  };
+  
+  const resetGroupForm = () => {
+    setIsEditingGroup(false);
+    setEditingGroupId(null);
+    setGroupName('');
+    setGroupIcon('Wallet');
+  };
+
+  const handleEditGroup = (group: AccountGroup) => {
+    setIsEditingGroup(true);
+    setEditingGroupId(group.id);
+    setGroupName(group.name);
+    setGroupIcon(group.icon || 'Wallet');
+  };
+
+  const handleSaveGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isEditingGroup && editingGroupId) {
+      await updateAccountGroup(editingGroupId, { name: groupName, icon: groupIcon });
+    } else {
+      await addAccountGroup({ name: groupName, icon: groupIcon });
+    }
+    resetGroupForm();
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      const result = await deleteAccountGroup(groupId);
+      if (result && result.movedCount > 0) {
+         alert(`Group deleted successfully. ${result.movedCount} account(s) were automatically moved to "${result.targetGroupName}".`);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete group.');
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
   };
 
-  // Grouping accounts
+  // Grouping accounts by dynamic groups
   const groupedAccounts = useMemo(() => {
-    const map: Record<AccountGroup, Account[]> = {
-      'Cash': [],
-      'Debit Card': [],
-      'Credit Card': [],
-      'Savings': []
-    };
+    const map: Record<string, Account[]> = {};
+    accountGroups.forEach(g => map[g.id] = []);
+    
     accounts.forEach(acc => {
-      const grp = acc.group && map[acc.group] ? acc.group : 'Cash';
-      map[grp].push(acc);
+      let gId = acc.groupId;
+      if (!gId && acc.group) {
+         // Legacy mapping
+         const found = accountGroups.find(g => g.name === acc.group);
+         if (found) gId = found.id;
+      }
+      
+      // Fallback if group was deleted but account not updated somehow
+      if (!gId || !map[gId]) {
+         gId = accountGroups[0]?.id;
+      }
+      
+      if (gId && map[gId]) {
+        map[gId].push(acc);
+      }
     });
     return map;
-  }, [accounts]);
+  }, [accounts, accountGroups]);
 
-  // Calculating totals per group
   const groupTotals = useMemo(() => {
-    const totals: Record<AccountGroup, number> = {
-      'Cash': 0,
-      'Debit Card': 0,
-      'Credit Card': 0,
-      'Savings': 0
-    };
-    (Object.keys(groupedAccounts) as AccountGroup[]).forEach(grp => {
-      totals[grp] = groupedAccounts[grp].reduce((sum, acc) => sum + acc.currentBalance, 0);
+    const totals: Record<string, number> = {};
+    accountGroups.forEach(grp => {
+      totals[grp.id] = (groupedAccounts[grp.id] || []).reduce((sum, acc) => sum + acc.currentBalance, 0);
     });
     return totals;
-  }, [groupedAccounts]);
+  }, [groupedAccounts, accountGroups]);
 
-  // Grand Total
   const grandTotal = useMemo(() => {
     return accounts.reduce((sum, acc) => sum + acc.currentBalance, 0);
   }, [accounts]);
@@ -116,12 +175,16 @@ export const Accounts: React.FC = () => {
     <div className="accounts-page">
       <div className="page-header">
         <h1 className="page-title">Accounts</h1>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          <Plus size={18} /> Add Account
-        </button>
+        <div className="header-actions">
+          <button className="btn btn-secondary" onClick={handleOpenGroupModal}>
+            <Settings2 size={18} /> Manage Groups
+          </button>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()} disabled={accountGroups.length === 0}>
+            <Plus size={18} /> Add Account
+          </button>
+        </div>
       </div>
 
-      {/* Summary Header Banner */}
       <div className="card grand-total-card">
         <div className="grand-total-content">
           <div className="grand-total-info">
@@ -129,30 +192,30 @@ export const Accounts: React.FC = () => {
             <h2 className="grand-total-amount">{formatCurrency(grandTotal)}</h2>
           </div>
           <div className="group-summary-pills">
-            {ACCOUNT_GROUPS.map(grp => (
-              <div key={grp} className="summary-pill">
-                <span className="pill-name">{grp}</span>
-                <span className="pill-amount">{formatCurrency(groupTotals[grp])}</span>
+            {accountGroups.map(grp => (
+              <div key={grp.id} className="summary-pill">
+                <span className="pill-name">{grp.name}</span>
+                <span className="pill-amount">{formatCurrency(groupTotals[grp.id] || 0)}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Grouped Account Sections */}
       <div className="account-groups-container">
-        {ACCOUNT_GROUPS.map(grp => {
-          const groupAccs = groupedAccounts[grp];
-          const total = groupTotals[grp];
+        {accountGroups.map(grp => {
+          const groupAccs = groupedAccounts[grp.id] || [];
+          const total = groupTotals[grp.id] || 0;
+          const GroupIconComponent = AVAILABLE_ICONS[grp.icon] || AVAILABLE_ICONS['Wallet'];
 
           return (
-            <div key={grp} className="account-group-section">
+            <div key={grp.id} className="account-group-section">
               <div className="group-header">
                 <div className="group-header-title">
-                  <span className={`group-icon-badge group-${grp.toLowerCase().replace(/\s+/g, '-')}`}>
-                    {getGroupIcon(grp)}
+                  <span className="group-icon-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', border: '1px solid var(--border-color)'}}>
+                    {GroupIconComponent}
                   </span>
-                  <h2>{grp}</h2>
+                  <h2>{grp.name}</h2>
                   <span className="group-count">({groupAccs.length})</span>
                 </div>
                 <div className="group-header-total">
@@ -167,7 +230,7 @@ export const Accounts: React.FC = () => {
                       <div className="account-card-header">
                         <div>
                           <div className="account-name">{account.name}</div>
-                          <span className="account-group-tag">{grp}</span>
+                          <span className="account-group-tag">{grp.name}</span>
                           <div className="account-balance">{formatCurrency(account.currentBalance)}</div>
                         </div>
                       </div>
@@ -196,20 +259,26 @@ export const Accounts: React.FC = () => {
                 </div>
               ) : (
                 <div className="empty-group-card card">
-                  <p>No {grp} accounts added yet.</p>
+                  <p>No {grp.name} accounts added yet.</p>
                   <button
                     className="btn btn-secondary btn-small"
-                    onClick={() => handleOpenModal(undefined, grp)}
+                    onClick={() => handleOpenModal(undefined, grp.id)}
                   >
-                    <Plus size={14} /> Add {grp} Account
+                    <Plus size={14} /> Add {grp.name} Account
                   </button>
                 </div>
               )}
             </div>
           );
         })}
+        {accountGroups.length === 0 && (
+          <div className="card empty-state">
+             No account groups exist. Please create an Account Group first.
+          </div>
+        )}
       </div>
 
+      {/* Add / Edit Account Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -224,7 +293,7 @@ export const Accounts: React.FC = () => {
               value={name}
               onChange={e => setName(e.target.value)}
               required
-              placeholder="e.g. HDFC Salary, Wallet, HDFC Credit Card"
+              placeholder="e.g. HDFC Salary, Wallet"
             />
           </div>
 
@@ -232,14 +301,13 @@ export const Accounts: React.FC = () => {
             <label className="form-label">Account Group</label>
             <select
               className="form-input"
-              value={group}
-              onChange={e => setGroup(e.target.value as AccountGroup)}
+              value={selectedGroupId}
+              onChange={e => setSelectedGroupId(e.target.value)}
               required
             >
-              <option value="Cash">Cash</option>
-              <option value="Debit Card">Debit Card</option>
-              <option value="Credit Card">Credit Card</option>
-              <option value="Savings">Savings</option>
+              {accountGroups.map(grp => (
+                 <option key={grp.id} value={grp.id}>{grp.name}</option>
+              ))}
             </select>
           </div>
 
@@ -261,6 +329,96 @@ export const Accounts: React.FC = () => {
             <button type="submit" className="btn btn-primary">Save Account</button>
           </div>
         </form>
+      </Modal>
+
+      {/* Manage Groups Modal */}
+      <Modal
+        isOpen={isGroupModalOpen}
+        onClose={() => setIsGroupModalOpen(false)}
+        title="Manage Account Groups"
+      >
+        <div className="manage-groups-container">
+          <div className="existing-groups-list">
+             <h4 style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Existing Groups</h4>
+             {accountGroups.map(grp => (
+                <div key={grp.id} className="group-list-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', marginBottom: '0.5rem' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ color: 'var(--accent-primary)'}}>{AVAILABLE_ICONS[grp.icon] || AVAILABLE_ICONS['Wallet']}</span>
+                      <span style={{ fontWeight: 500 }}>{grp.name}</span>
+                   </div>
+                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button type="button" className="icon-btn-small" onClick={() => handleEditGroup(grp)}>
+                        <Edit2 size={14} />
+                      </button>
+                      <button type="button" className="icon-btn-small delete-btn" onClick={() => {
+                        if (accountGroups.length <= 1) {
+                           alert('Cannot delete the last remaining group.');
+                           return;
+                        }
+                        if (window.confirm(`Are you sure you want to delete the group "${grp.name}"? Any linked accounts will be moved safely.`)) {
+                           handleDeleteGroup(grp.id);
+                        }
+                      }}>
+                        <Trash2 size={14} />
+                      </button>
+                   </div>
+                </div>
+             ))}
+          </div>
+          
+          <hr style={{ margin: '1.5rem 0', borderColor: 'var(--border-color)' }} />
+          
+          <h4 style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>
+             {isEditingGroup ? 'Edit Group' : 'Create New Group'}
+          </h4>
+          <form onSubmit={handleSaveGroup} className="group-form">
+            <div className="form-group">
+              <label className="form-label">Group Name</label>
+              <input
+                type="text"
+                className="form-input"
+                value={groupName}
+                onChange={e => setGroupName(e.target.value)}
+                required
+                placeholder="e.g. Investment, Business"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Icon</label>
+              <div className="icon-selector" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                 {Object.keys(AVAILABLE_ICONS).map(iconName => (
+                    <button
+                      key={iconName}
+                      type="button"
+                      className={`btn-icon-select ${groupIcon === iconName ? 'active' : ''}`}
+                      onClick={() => setGroupIcon(iconName)}
+                      style={{ 
+                         padding: '0.5rem', 
+                         borderRadius: 'var(--radius-md)', 
+                         border: groupIcon === iconName ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                         backgroundColor: groupIcon === iconName ? 'var(--bg-primary)' : 'var(--bg-secondary)',
+                         cursor: 'pointer'
+                      }}
+                    >
+                      {AVAILABLE_ICONS[iconName]}
+                    </button>
+                 ))}
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <button type="submit" className="btn btn-primary">
+                 {isEditingGroup ? 'Update Group' : 'Add Group'}
+              </button>
+              {isEditingGroup && (
+                <button type="button" className="btn btn-secondary" onClick={resetGroupForm}>
+                   Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

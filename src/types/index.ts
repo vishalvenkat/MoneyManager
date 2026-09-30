@@ -1,9 +1,14 @@
-export type AccountGroup = 'Cash' | 'Debit Card' | 'Credit Card' | 'Savings';
+export interface AccountGroup {
+  id: string;
+  name: string;
+  icon: string;
+}
 
 export type Account = {
   id: string;
   name: string;
-  group?: AccountGroup; // Account Grouping (Cash, Debit Card, Credit Card, Savings)
+  groupId?: string; // Links to AccountGroup.id
+  group?: string; // Legacy field for backwards compatibility
   initialBalance: number;
   currentBalance: number;
 };
