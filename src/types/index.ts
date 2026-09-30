@@ -11,6 +11,7 @@ export type Account = {
   group?: string; // Legacy field for backwards compatibility
   initialBalance: number;
   currentBalance: number;
+  includeInNetWorth?: boolean; // Flag to include/exclude from net assets
 };
 
 export type CategoryType = 'income' | 'expense';

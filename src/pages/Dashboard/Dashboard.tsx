@@ -14,7 +14,9 @@ export const Dashboard: React.FC = () => {
 
   // Summary Metrics
   const totalBalance = useMemo(() => {
-    return accounts.reduce((sum, acc) => sum + acc.currentBalance, 0);
+    return accounts
+      .filter(a => a.includeInNetWorth !== false)
+      .reduce((sum, acc) => sum + acc.currentBalance, 0);
   }, [accounts]);
 
   const { monthlyIncome, monthlyExpense } = useMemo(() => {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAccounts } from '../../context/AccountContext';
-import { Plus, Edit2, Trash2, Wallet, CreditCard, Landmark, PiggyBank, Building, Smartphone, Briefcase, Settings2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Wallet, CreditCard, Landmark, PiggyBank, Building, Smartphone, Briefcase, Settings2, EyeOff } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import type { Account, AccountGroup } from '../../types';
 import './Accounts.css';
@@ -28,6 +28,7 @@ export const Accounts: React.FC = () => {
   const [name, setName] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [currentBalance, setCurrentBalance] = useState('');
+  const [includeInNetWorth, setIncludeInNetWorth] = useState(true);
 
   // Group Management Modal State
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -50,11 +51,13 @@ export const Accounts: React.FC = () => {
       }
       setSelectedGroupId(matchedGroupId || (accountGroups[0]?.id ?? ''));
       setCurrentBalance((account.currentBalance ?? account.initialBalance ?? 0).toString());
+      setIncludeInNetWorth(account.includeInNetWorth !== false); // Defaults to true if undefined
     } else {
       setEditingAccount(null);
       setName('');
       setSelectedGroupId(defaultGroupId || (accountGroups[0]?.id ?? ''));
       setCurrentBalance('');
+      setIncludeInNetWorth(true);
     }
     setIsModalOpen(true);
   };
@@ -77,6 +80,7 @@ export const Accounts: React.FC = () => {
         group: selectedGroupObj?.name || '', // Legacy sync
         initialBalance: balanceNum,
         currentBalance: balanceNum,
+        includeInNetWorth,
       });
     } else {
       addAccount({
@@ -85,6 +89,7 @@ export const Accounts: React.FC = () => {
         group: selectedGroupObj?.name || '', // Legacy sync
         initialBalance: balanceNum,
         currentBalance: balanceNum,
+        includeInNetWorth,
       });
     }
     handleCloseModal();
@@ -168,7 +173,9 @@ export const Accounts: React.FC = () => {
   }, [groupedAccounts, accountGroups]);
 
   const grandTotal = useMemo(() => {
-    return accounts.reduce((sum, acc) => sum + acc.currentBalance, 0);
+    return accounts
+      .filter(a => a.includeInNetWorth !== false)
+      .reduce((sum, acc) => sum + acc.currentBalance, 0);
   }, [accounts]);
 
   return (
@@ -230,7 +237,14 @@ export const Accounts: React.FC = () => {
                       <div className="account-card-header">
                         <div>
                           <div className="account-name">{account.name}</div>
-                          <span className="account-group-tag">{grp.name}</span>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                            <span className="account-group-tag" style={{ margin: 0 }}>{grp.name}</span>
+                            {account.includeInNetWorth === false && (
+                              <span className="account-group-tag" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-secondary)' }}>
+                                <EyeOff size={12} /> Excluded from Net Worth
+                              </span>
+                            )}
+                          </div>
                           <div className="account-balance">{formatCurrency(account.currentBalance)}</div>
                         </div>
                       </div>
@@ -322,6 +336,24 @@ export const Accounts: React.FC = () => {
               required
               placeholder="0.00"
             />
+          </div>
+
+          <div className="toggle-switch-container" onClick={() => setIncludeInNetWorth(!includeInNetWorth)}>
+            <div className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={includeInNetWorth}
+                onChange={e => setIncludeInNetWorth(e.target.checked)}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <span className="toggle-slider"></span>
+            </div>
+            <div className="toggle-switch-content">
+              <div className="toggle-switch-label">Include in Total Net Assets</div>
+              <div className="toggle-switch-description">
+                Exclude this account's balance from your global dashboard net worth summary if unchecked.
+              </div>
+            </div>
           </div>
 
           <div className="modal-footer">
