@@ -7,6 +7,7 @@ import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX,
 import { Modal } from '../../components/Modal/Modal';
 import { format } from 'date-fns';
 import { getAvailableFilterCounts, matchesFiltersExcept, type ActiveFilters } from '../../utils/filterUtils';
+import { AutocompleteInput } from '../../components/AutocompleteInput/AutocompleteInput';
 import './Transactions.css';
 
 export const Transactions: React.FC = () => {
@@ -40,6 +41,17 @@ export const Transactions: React.FC = () => {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  // Extract unique historical notes
+  const historicalNotes = useMemo(() => {
+    const noteSet = new Set<string>();
+    transactions.forEach(t => {
+      if (t.notes && t.notes.trim()) {
+        noteSet.add(t.notes.trim());
+      }
+    });
+    return Array.from(noteSet).sort();
+  }, [transactions]);
 
   // Active filter count calculation
   const activeFilterCount = useMemo(() => {
@@ -684,11 +696,11 @@ export const Transactions: React.FC = () => {
 
           <div className="form-group">
             <label className="form-label">Notes (Optional)</label>
-            <input
-              type="text"
-              className="form-input"
+            <AutocompleteInput
               value={notes}
-              onChange={e => setNotes(e.target.value)}
+              onChange={setNotes}
+              suggestions={historicalNotes}
+              placeholder="e.g. Grocery shopping, Rent, etc."
             />
           </div>
 
