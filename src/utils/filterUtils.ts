@@ -7,6 +7,7 @@ export interface ActiveFilters {
   filterCategory: string;
   filterSubcategory: string;
   filterType: string;
+  searchQuery?: string;
 }
 
 /**
@@ -55,6 +56,14 @@ export const matchesFiltersExcept = (
   // Transaction Type
   if (ignoreField !== 'filterType' && filters.filterType !== 'all') {
     if (t.type !== filters.filterType) return false;
+  }
+
+  // Text Search
+  if (ignoreField !== 'searchQuery' && filters.searchQuery) {
+    const q = filters.searchQuery.toLowerCase();
+    const noteMatch = t.notes?.toLowerCase().includes(q) || false;
+    const descMatch = t.description?.toLowerCase().includes(q) || false;
+    if (!noteMatch && !descMatch) return false;
   }
 
   return true;

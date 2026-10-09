@@ -3,7 +3,7 @@ import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
 import type { Transaction, TransactionType } from '../../types';
-import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX, ChevronLeft, ChevronRight, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX, ChevronLeft, ChevronRight, Filter, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import { format } from 'date-fns';
 import { getAvailableFilterCounts, matchesFiltersExcept, type ActiveFilters } from '../../utils/filterUtils';
@@ -31,6 +31,7 @@ export const Transactions: React.FC = () => {
 
   // Filtering State & Panel Collapse Toggle
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [filterAccount, setFilterAccount] = useState('all');
@@ -56,6 +57,7 @@ export const Transactions: React.FC = () => {
   // Active filter count calculation
   const activeFilterCount = useMemo(() => {
     let count = 0;
+    if (searchQuery.trim()) count++;
     if (startDate) count++;
     if (endDate) count++;
     if (filterAccount !== 'all') count++;
@@ -63,7 +65,7 @@ export const Transactions: React.FC = () => {
     if (filterSubcategory !== 'all') count++;
     if (filterType !== 'all') count++;
     return count;
-  }, [startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType]);
+  }, [searchQuery, startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType]);
 
   // Collect all unique subcategories across categories and transactions
   const allSubcategories = useMemo(() => {
@@ -79,13 +81,14 @@ export const Transactions: React.FC = () => {
 
   // Active filters object
   const activeFilters = useMemo<ActiveFilters>(() => ({
+    searchQuery,
     startDate,
     endDate,
     filterAccount,
     filterCategory,
     filterSubcategory,
     filterType,
-  }), [startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType]);
+  }), [searchQuery, startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType]);
 
   // Compute dynamic cascading counts for each filter option
   const filterCounts = useMemo(() => {
@@ -106,7 +109,7 @@ export const Transactions: React.FC = () => {
   // Reset to page 1 whenever filters or page size change
   useEffect(() => {
     setCurrentPage(1);
-  }, [startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType, pageSize]);
+  }, [searchQuery, startDate, endDate, filterAccount, filterCategory, filterSubcategory, filterType, pageSize]);
 
   // Pagination Calculations
   const totalItems = filteredTransactions.length;
@@ -135,6 +138,7 @@ export const Transactions: React.FC = () => {
   const hasActiveFilters = activeFilterCount > 0;
 
   const handleClearFilters = () => {
+    setSearchQuery('');
     setStartDate('');
     setEndDate('');
     setFilterAccount('all');
@@ -312,6 +316,24 @@ export const Transactions: React.FC = () => {
                 <FilterX size={14} /> Clear Filters ({activeFilterCount})
               </button>
             )}
+          </div>
+          
+          <div className="filter-search-row">
+            <div className="search-input-wrapper">
+              <Search className="search-icon" size={18} />
+              <input
+                type="text"
+                className="form-input search-input"
+                placeholder="Search notes or descriptions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button type="button" className="search-clear-btn" onClick={() => setSearchQuery('')}>
+                  <X size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="filter-grid">
