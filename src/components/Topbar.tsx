@@ -3,7 +3,8 @@ import { Moon, Sun, Bell, LogOut, Menu, Trash2, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { expenseService } from '../services/expenseService';
 import { Modal } from './Modal/Modal';
-import { updateProfile } from 'firebase/auth';
+import { UserProfileModal } from './UserProfile/UserProfileModal';
+import { resolveAvatarUrl } from '../utils/avatarUtils';
 import './Topbar.css';
 
 interface TopbarProps {
@@ -16,10 +17,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [displayName, setDisplayName] = useState('');
-  const [photoURL, setPhotoURL] = useState('');
-  const { logout, currentUser } = useAuth();
+  const { logout, currentUser, userProfile } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,28 +60,12 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
 
   const handleOpenProfile = () => {
     setIsDropdownOpen(false);
-    setDisplayName(currentUser?.displayName || '');
-    setPhotoURL(currentUser?.photoURL || '');
     setIsProfileModalOpen(true);
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    try {
-      setIsUpdatingProfile(true);
-      await updateProfile(currentUser, { displayName, photoURL });
-      setIsProfileModalOpen(false);
-      window.location.reload(); // Refresh to reflect updated user state throughout the app
-    } catch (err) {
-      console.error('Failed to update profile', err);
-      alert('An error occurred while updating your profile. Please try again.');
-    } finally {
-      setIsUpdatingProfile(false);
-    }
-  };
-
-  const avatarUrl = currentUser?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.email || 'Felix'}`;
+  const userDisplayName = userProfile?.fullName || currentUser?.displayName || 'User';
+  const userEmail = userProfile?.email || currentUser?.email || '';
+  const avatarUrl = userProfile?.photoURL || currentUser?.photoURL || resolveAvatarUrl(userProfile?.avatarId, undefined, userProfile?.avatarGender || 'male');
 
   return (
     <header className="topbar">
@@ -100,15 +82,15 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
         </button>
         
         <div className="profile-menu" ref={dropdownRef}>
-          <div className="avatar" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
+          <div className="avatar" onClick={() => setIsDropdownOpen(!isDropdownOpen)} title="Account menu">
             <img src={avatarUrl} alt="User Avatar" />
           </div>
           
           {isDropdownOpen && (
             <div className="dropdown-menu">
               <div className="dropdown-header">
-                <strong>{currentUser?.displayName || 'User'}</strong>
-                <span>{currentUser?.email}</span>
+                <strong>{userDisplayName}</strong>
+                <span>{userEmail}</span>
               </div>
               <button 
                 className="dropdown-item" 
@@ -165,61 +147,10 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
           </button>
         </div>
       </Modal>
-      <Modal 
+      <UserProfileModal 
         isOpen={isProfileModalOpen} 
-        onClose={() => !isUpdatingProfile && setIsProfileModalOpen(false)} 
-        title="Edit Profile"
-      >
-        <form onSubmit={handleUpdateProfile}>
-          <div className="form-group">
-            <label className="form-label">Email (Read Only)</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              value={currentUser?.email || ''} 
-              disabled 
-              style={{ backgroundColor: 'var(--bg-primary)', cursor: 'not-allowed' }}
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Display Name</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              value={displayName} 
-              onChange={e => setDisplayName(e.target.value)} 
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Profile Picture URL</label>
-            <input 
-              type="url" 
-              className="form-input" 
-              value={photoURL} 
-              onChange={e => setPhotoURL(e.target.value)} 
-              placeholder="https://example.com/avatar.png"
-            />
-          </div>
-          <div className="modal-footer">
-            <button 
-              type="button" 
-              className="btn btn-secondary" 
-              onClick={() => setIsProfileModalOpen(false)}
-              disabled={isUpdatingProfile}
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              disabled={isUpdatingProfile}
-            >
-              {isUpdatingProfile ? 'Updating...' : 'Update'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        onClose={() => setIsProfileModalOpen(false)} 
+      />
 
     </header>
   );

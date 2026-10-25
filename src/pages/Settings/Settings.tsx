@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
 import { useCategories } from '../../context/CategoryContext';
+import { useAuth } from '../../context/AuthContext';
 import type { Category, CategoryType } from '../../types';
-import { Plus, Edit2, Trash2, X, Target } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Target, User, Mail, Phone, Calendar } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
+import { UserProfileModal } from '../../components/UserProfile/UserProfileModal';
+import { resolveAvatarUrl } from '../../utils/avatarUtils';
 import './Settings.css';
 
 export const Settings: React.FC = () => {
   const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
+  const { currentUser, userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  const displayName = userProfile?.fullName || currentUser?.displayName || 'User';
+  const userEmail = userProfile?.email || currentUser?.email || '';
+  const userMobile = userProfile?.mobileNumber || '';
+  const userDob = userProfile?.dateOfBirth || '';
+  const avatarUrl = userProfile?.photoURL || currentUser?.photoURL || resolveAvatarUrl(userProfile?.avatarId, undefined, userProfile?.avatarGender || 'male');
 
   // Form State
   const [name, setName] = useState('');
@@ -92,8 +103,43 @@ export const Settings: React.FC = () => {
 
   return (
     <div className="settings-page">
-      <div className="page-header">
-        <h1 className="page-title">Categories</h1>
+      {/* User Profile Card */}
+      <div className="card settings-profile-card">
+        <div className="settings-profile-left">
+          <div className="settings-profile-avatar-wrapper">
+            <img src={avatarUrl} alt="Avatar" className="settings-profile-avatar" />
+          </div>
+          <div className="settings-profile-details">
+            <div className="settings-profile-header-line">
+              <h3 className="settings-profile-name">{displayName}</h3>
+            </div>
+            <div className="settings-profile-meta">
+              <span className="settings-profile-meta-item">
+                <Mail size={14} /> {userEmail || 'No email set'}
+              </span>
+              {userMobile && (
+                <span className="settings-profile-meta-item">
+                  <Phone size={14} /> {userMobile}
+                </span>
+              )}
+              {userDob && (
+                <span className="settings-profile-meta-item">
+                  <Calendar size={14} /> {userDob}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <button 
+          className="btn btn-secondary settings-edit-profile-btn"
+          onClick={() => setIsProfileModalOpen(true)}
+        >
+          <User size={16} /> Edit Profile
+        </button>
+      </div>
+
+      <div className="page-header" style={{ marginTop: '2.5rem' }}>
+        <h2 className="page-title" style={{ fontSize: '1.25rem' }}>Categories</h2>
         <button className="btn btn-primary" onClick={() => handleOpenModal()}>
           <Plus size={18} /> Add Category
         </button>
@@ -287,6 +333,11 @@ export const Settings: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      <UserProfileModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+      />
     </div>
   );
 };

@@ -1,7 +1,8 @@
 import { db } from './firebase';
 import { 
-  collection, doc, setDoc, updateDoc, deleteDoc, getDocs, writeBatch
+  collection, doc, setDoc, updateDoc, deleteDoc, getDocs, writeBatch, getDoc
 } from 'firebase/firestore';
+import type { UserProfile } from '../types';
 
 export const expenseService = {
   // --- Accounts ---
@@ -59,6 +60,20 @@ export const expenseService = {
   deleteTransaction: async (uid: string, transactionId: string) => {
     const docRef = doc(db, 'users', uid, 'transactions', transactionId);
     await deleteDoc(docRef);
+  },
+
+  // --- User Profile ---
+  getUserProfile: async (uid: string): Promise<UserProfile | null> => {
+    const docRef = doc(db, 'users', uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as UserProfile;
+    }
+    return null;
+  },
+  saveUserProfile: async (uid: string, data: Partial<UserProfile>): Promise<void> => {
+    const docRef = doc(db, 'users', uid);
+    await setDoc(docRef, { ...data, updatedAt: new Date().toISOString() }, { merge: true });
   },
 
   // --- Reset User Data ---

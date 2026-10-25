@@ -41,3 +41,18 @@ export type Transaction = {
   notes?: string;
   description?: string;
 };
+
+export type AvatarGender = 'male' | 'female';
+
+export interface UserProfile {
+  uid: string;
+  fullName: string;
+  dateOfBirth?: string; // YYYY-MM-DD
+  mobileNumber: string; // Mandatory
+  email: string; // Mandatory
+  avatarGender?: AvatarGender;
+  avatarId?: string;
+  photoURL?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
