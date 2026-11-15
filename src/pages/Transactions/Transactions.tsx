@@ -8,6 +8,11 @@ import { Modal } from '../../components/Modal/Modal';
 import { format } from 'date-fns';
 import { getAvailableFilterCounts, matchesFiltersExcept, type ActiveFilters } from '../../utils/filterUtils';
 import { AutocompleteInput } from '../../components/AutocompleteInput/AutocompleteInput';
+import { 
+  calculateClosingBalances, 
+  getFormattedClosingBalance, 
+  compareTransactionsDesc 
+} from '../../utils/balanceUtils';
 import './Transactions.css';
 
 export const Transactions: React.FC = () => {
@@ -106,6 +111,11 @@ export const Transactions: React.FC = () => {
     return transactions.filter(t => matchesFiltersExcept(t, activeFilters));
   }, [transactions, activeFilters]);
 
+  // Chronologically compute closing balances per account across all historical transactions (memoized)
+  const closingBalanceMap = useMemo(() => {
+    return calculateClosingBalances(transactions, accounts);
+  }, [transactions, accounts]);
+
   // Reset to page 1 whenever filters or page size change
   useEffect(() => {
     setCurrentPage(1);
@@ -118,9 +128,7 @@ export const Transactions: React.FC = () => {
   const endIndex = Math.min(startIndex + pageSize, totalItems);
 
   const paginatedTransactions = useMemo(() => {
-    const sorted = [...filteredTransactions].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    const sorted = [...filteredTransactions].sort(compareTransactionsDesc);
     return sorted.slice(startIndex, startIndex + pageSize);
   }, [filteredTransactions, startIndex, pageSize]);
 
@@ -174,6 +182,12 @@ export const Transactions: React.FC = () => {
       setNotes('');
     }
     setIsModalOpen(true);
+  };
+
+  const handleSwapAccounts = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setFromAccountId(toAccountId);
+    setToAccountId(fromAccountId);
   };
 
   const handleCloseModal = () => {
@@ -439,86 +453,7 @@ export const Transactions: React.FC = () => {
         </div>
       </div>
 
-      {/* Transactions List */}
-      <div className="transactions-list">
-        {totalItems === 0 && (
-          <div className="card empty-state">
-            {hasActiveFilters
-              ? "No transactions match your filter criteria."
-              : "No transactions recorded yet. Go to Backup & Restore to import records or click \"Add Transaction\" to begin."}
-          </div>
-        )}
-
-        {Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).map(dateKey => {
-          const dayTransactions = groupedTransactions[dateKey];
-          const dateObj = new Date(dateKey + 'T12:00:00Z');
-
-          return (
-            <div key={dateKey} className="day-group">
-              <div className="day-header">
-                <h3>{format(dateObj, 'MMM d, yyyy')}</h3>
-                <span className="day-subtitle">{format(dateObj, 'EEEE')}</span>
-              </div>
-
-              <div className="day-items card">
-                {dayTransactions.map(t => {
-                  const category = getCategoryTheme(t.categoryId);
-                  const isTransfer = t.type === 'transfer';
-
-                  return (
-                    <div key={t.id} className="transaction-row">
-                      <div className="tx-icon" style={{ backgroundColor: isTransfer ? '#6366f1' : category?.color || '#ccc' }}>
-                        {isTransfer ? <ArrowRightLeft size={16} /> : (t.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />)}
-                      </div>
-
-                      <div className="tx-details">
-                        <div className="tx-title">
-                          {isTransfer ? (
-                            'Fund Transfer'
-                          ) : (
-                            <>
-                              {category?.name || 'Uncategorized'}
-                              {t.subcategory && <span className="tx-subcategory-tag"> • {t.subcategory}</span>}
-                            </>
-                          )}
-                        </div>
-                        <div className="tx-subtitle">
-                          {isTransfer
-                            ? `${getAccountName(t.fromAccountId)} → ${getAccountName(t.toAccountId)}`
-                            : getAccountName(t.accountId)
-                          }
-                          {t.notes && ` • ${t.notes}`}
-                        </div>
-                      </div>
-
-                      <div className="tx-amount-actions">
-                        <div className={`tx-amount ${t.type}`}>
-                          {t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(t.amount)}
-                        </div>
-                        <div className="tx-actions">
-                          <button className="icon-btn-small" onClick={() => handleOpenModal(t)}>
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            className="icon-btn-small delete-btn"
-                            onClick={() => {
-                              if (window.confirm('Delete this transaction?')) deleteTransaction(t.id);
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Pagination Footer */}
+      {/* Pagination Bar */}
       {totalItems > 0 && (
         <div className="pagination-bar card">
           <div className="pagination-info">
@@ -566,6 +501,97 @@ export const Transactions: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Transactions List */}
+      <div className="transactions-list">
+        {totalItems === 0 && (
+          <div className="card empty-state">
+            {hasActiveFilters
+              ? "No transactions match your filter criteria."
+              : "No transactions recorded yet. Go to Backup & Restore to import records or click \"Add Transaction\" to begin."}
+          </div>
+        )}
+
+        {Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).map(dateKey => {
+          const dayTransactions = groupedTransactions[dateKey];
+          const dateObj = new Date(dateKey + 'T12:00:00Z');
+
+          return (
+            <div key={dateKey} className="day-group">
+              <div className="day-header">
+                <h3>{format(dateObj, 'MMM d, yyyy')}</h3>
+                <span className="day-subtitle">{format(dateObj, 'EEEE')}</span>
+              </div>
+
+              <div className="day-items card">
+                {dayTransactions.map(t => {
+                  const category = getCategoryTheme(t.categoryId);
+                  const isTransfer = t.type === 'transfer';
+                  const closingBal = closingBalanceMap.get(t.id);
+                  const balInfo = getFormattedClosingBalance(closingBal, filterAccount);
+
+                  return (
+                    <div key={t.id} className="transaction-row">
+                      <div className="tx-icon" style={{ backgroundColor: isTransfer ? '#6366f1' : category?.color || '#ccc' }}>
+                        {isTransfer ? <ArrowRightLeft size={16} /> : (t.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />)}
+                      </div>
+
+                      <div className="tx-details">
+                        <div className="tx-title">
+                          {isTransfer ? (
+                            'Fund Transfer'
+                          ) : (
+                            <>
+                              {category?.name || 'Uncategorized'}
+                              {t.subcategory && <span className="tx-subcategory-tag"> • {t.subcategory}</span>}
+                            </>
+                          )}
+                        </div>
+                        <div className="tx-subtitle">
+                          {isTransfer
+                            ? `${getAccountName(t.fromAccountId)} → ${getAccountName(t.toAccountId)}`
+                            : getAccountName(t.accountId)
+                          }
+                          {t.notes && ` • ${t.notes}`}
+                        </div>
+                      </div>
+
+                      <div className="tx-amount-actions">
+                        <div className="tx-amount-group">
+                          <div className={`tx-amount ${t.type}`}>
+                            {t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(t.amount)}
+                          </div>
+                          {balInfo && (
+                            <div 
+                              className={`tx-closing-balance ${balInfo.isNegative ? 'negative' : ''}`}
+                              title={balInfo.tooltip}
+                            >
+                              {balInfo.text}
+                            </div>
+                          )}
+                        </div>
+                        <div className="tx-actions">
+                          <button className="icon-btn-small" onClick={() => handleOpenModal(t)}>
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            className="icon-btn-small delete-btn"
+                            onClick={() => {
+                              if (window.confirm('Delete this transaction?')) deleteTransaction(t.id);
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Mobile Floating Action Button (FAB) */}
       <button
@@ -634,7 +660,7 @@ export const Transactions: React.FC = () => {
           </div>
 
           {type === 'transfer' ? (
-            <div className="form-row">
+            <div className="form-row form-row-transfer">
               <div className="form-group flex-1">
                 <label className="form-label">From Account</label>
                 <select
@@ -646,6 +672,18 @@ export const Transactions: React.FC = () => {
                   <option value="" disabled>Select Account</option>
                   {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({formatCurrency(a.currentBalance)})</option>)}
                 </select>
+              </div>
+              <div className="swap-account-wrapper">
+                <button
+                  type="button"
+                  className="btn-swap-accounts"
+                  onClick={handleSwapAccounts}
+                  title="Swap From and To Accounts"
+                  aria-label="Swap From and To Accounts"
+                  disabled={!fromAccountId && !toAccountId}
+                >
+                  <ArrowRightLeft size={18} />
+                </button>
               </div>
               <div className="form-group flex-1">
                 <label className="form-label">To Account</label>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAccounts } from '../../context/AccountContext';
+import { useTransactions } from '../../context/TransactionContext';
 import { Plus, Edit2, Trash2, Wallet, CreditCard, Landmark, PiggyBank, Building, Smartphone, Briefcase, Settings2, EyeOff } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import type { Account, AccountGroup } from '../../types';
@@ -21,13 +22,16 @@ export const Accounts: React.FC = () => {
     addAccount, updateAccount, deleteAccount,
     addAccountGroup, updateAccountGroup, deleteAccountGroup 
   } = useAccounts();
+  const { transactions } = useTransactions();
 
   // Account Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [name, setName] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [initialBalance, setInitialBalance] = useState('');
   const [currentBalance, setCurrentBalance] = useState('');
+  const [netTxChange, setNetTxChange] = useState<number>(0);
   const [includeInNetWorth, setIncludeInNetWorth] = useState(true);
 
   // Group Management Modal State
@@ -50,16 +54,76 @@ export const Accounts: React.FC = () => {
          if (found) matchedGroupId = found.id;
       }
       setSelectedGroupId(matchedGroupId || (accountGroups[0]?.id ?? ''));
-      setCurrentBalance((account.currentBalance ?? account.initialBalance ?? 0).toString());
+
+      // Calculate net transactions associated with this account
+      const txDelta = transactions.reduce((sum, t) => {
+        if (!t) return sum;
+        const amt = Number(t.amount) || 0;
+        if (t.type === 'income' && t.accountId === account.id) return sum + amt;
+        if (t.type === 'expense' && t.accountId === account.id) return sum - amt;
+        if (t.type === 'transfer') {
+          if (t.fromAccountId === account.id) return sum - amt;
+          if (t.toAccountId === account.id) return sum + amt;
+        }
+        return sum;
+      }, 0);
+
+      setNetTxChange(txDelta);
+
+      // Determine initial balance and current balance
+      let initBal = account.initialBalance;
+      const currBal = account.currentBalance ?? 0;
+
+      if (typeof initBal !== 'number' || isNaN(initBal)) {
+        initBal = currBal - txDelta;
+      }
+
+      setInitialBalance(initBal.toString());
+      setCurrentBalance(currBal.toString());
       setIncludeInNetWorth(account.includeInNetWorth !== false); // Defaults to true if undefined
     } else {
       setEditingAccount(null);
       setName('');
       setSelectedGroupId(defaultGroupId || (accountGroups[0]?.id ?? ''));
+      setNetTxChange(0);
+      setInitialBalance('');
       setCurrentBalance('');
       setIncludeInNetWorth(true);
     }
     setIsModalOpen(true);
+  };
+
+  const handleInitialBalanceChange = (newInitVal: string) => {
+    setInitialBalance(newInitVal);
+    const parsedInit = parseFloat(newInitVal);
+    
+    if (editingAccount) {
+      if (!isNaN(parsedInit)) {
+        const updatedCurrent = parsedInit + netTxChange;
+        setCurrentBalance(Number(updatedCurrent.toFixed(2)).toString());
+      } else if (newInitVal === '' || newInitVal === '-') {
+        setCurrentBalance('');
+      }
+    } else {
+      // In Add Account mode, initial balance defines starting current balance
+      setCurrentBalance(newInitVal);
+    }
+  };
+
+  const handleCurrentBalanceChange = (newCurrVal: string) => {
+    setCurrentBalance(newCurrVal);
+    const parsedCurr = parseFloat(newCurrVal);
+    
+    if (editingAccount) {
+      if (!isNaN(parsedCurr)) {
+        const updatedInitial = parsedCurr - netTxChange;
+        setInitialBalance(Number(updatedInitial.toFixed(2)).toString());
+      } else if (newCurrVal === '' || newCurrVal === '-') {
+        setInitialBalance('');
+      }
+    } else {
+      setInitialBalance(newCurrVal);
+    }
   };
 
   const handleCloseModal = () => {
@@ -69,7 +133,8 @@ export const Accounts: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const balanceNum = parseFloat(currentBalance) || 0;
+    const initBalNum = parseFloat(initialBalance) || 0;
+    const currentBalNum = parseFloat(currentBalance) || 0;
     
     const selectedGroupObj = accountGroups.find(g => g.id === selectedGroupId);
 
@@ -78,8 +143,8 @@ export const Accounts: React.FC = () => {
         name,
         groupId: selectedGroupId,
         group: selectedGroupObj?.name || '', // Legacy sync
-        initialBalance: balanceNum,
-        currentBalance: balanceNum,
+        initialBalance: initBalNum,
+        currentBalance: currentBalNum,
         includeInNetWorth,
       });
     } else {
@@ -87,8 +152,8 @@ export const Accounts: React.FC = () => {
         name,
         groupId: selectedGroupId,
         group: selectedGroupObj?.name || '', // Legacy sync
-        initialBalance: balanceNum,
-        currentBalance: balanceNum,
+        initialBalance: initBalNum,
+        currentBalance: currentBalNum,
         includeInNetWorth,
       });
     }
@@ -246,6 +311,11 @@ export const Accounts: React.FC = () => {
                             )}
                           </div>
                           <div className="account-balance">{formatCurrency(account.currentBalance)}</div>
+                          {account.initialBalance !== undefined && account.initialBalance !== account.currentBalance && (
+                            <div className="account-initial-balance" title="Initial opening balance">
+                              Initial: {formatCurrency(account.initialBalance)}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -325,18 +395,59 @@ export const Accounts: React.FC = () => {
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Current Balance (₹)</label>
-            <input
-              type="number"
-              step="0.01"
-              className="form-input"
-              value={currentBalance}
-              onChange={e => setCurrentBalance(e.target.value)}
-              required
-              placeholder="0.00"
-            />
-          </div>
+          {editingAccount ? (
+            <>
+              <div className="form-group">
+                <label className="form-label">Initial Balance (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="form-input"
+                  value={initialBalance}
+                  onChange={e => handleInitialBalanceChange(e.target.value)}
+                  required
+                  placeholder="0.00"
+                />
+                <span className="form-helper-text">
+                  Opening balance for this account. Editing this will update the current balance accordingly.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Current Balance (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="form-input"
+                  value={currentBalance}
+                  onChange={e => handleCurrentBalanceChange(e.target.value)}
+                  required
+                  placeholder="0.00"
+                />
+                {netTxChange !== 0 && (
+                  <span className="form-helper-text">
+                    Current balance reflects net transactions ({netTxChange >= 0 ? '+' : ''}{formatCurrency(netTxChange)}).
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="form-group">
+              <label className="form-label">Initial Balance (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="form-input"
+                value={initialBalance}
+                onChange={e => handleInitialBalanceChange(e.target.value)}
+                required
+                placeholder="0.00"
+              />
+              <span className="form-helper-text">
+                Starting balance for this new account.
+              </span>
+            </div>
+          )}
 
           <div className="toggle-switch-container" onClick={() => setIncludeInNetWorth(!includeInNetWorth)}>
             <div className="toggle-switch">
