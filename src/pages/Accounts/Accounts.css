@@ -1,6 +1,8 @@
 .accounts-page {
   max-width: 1000px;
+  width: 100%;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 /* Grand Total Banner */
@@ -333,8 +335,74 @@ input:checked + .toggle-slider:before {
 }
 
 @media (max-width: 640px) {
+  .accounts-page .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.875rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .accounts-page .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    width: 100%;
+  }
+
+  .accounts-page .header-actions .btn {
+    flex: 1 1 calc(50% - 0.35rem);
+    min-width: 130px;
+    justify-content: center;
+    padding: 0.625rem 0.5rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+
+  .grand-total-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .grand-total-amount {
+    font-size: 1.875rem;
+  }
+
+  .group-summary-pills {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .summary-pill {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .accounts-grid {
+    grid-template-columns: 1fr;
+    gap: 0.875rem;
+  }
+
+  .group-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .empty-group-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .empty-group-card .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .toggle-switch-container {
-    padding: 1.25rem;
+    padding: 1rem;
   }
 }
 

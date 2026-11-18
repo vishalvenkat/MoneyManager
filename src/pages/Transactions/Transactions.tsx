@@ -302,13 +302,16 @@ export const Transactions: React.FC = () => {
             className={`btn ${isFilterOpen ? 'btn-primary' : 'btn-secondary'} btn-toggle-filter`}
             onClick={() => setIsFilterOpen(prev => !prev)}
             title={isFilterOpen ? "Hide Filters" : "Show Filters"}
+            aria-label={isFilterOpen ? "Hide Filters" : "Show Filters"}
           >
-            <Filter size={18} />
-            <span>{isFilterOpen ? 'Hide Filters' : 'Filter'}</span>
+            <Filter size={18} className="filter-toggle-icon" />
+            <span className="filter-btn-text">{isFilterOpen ? 'Hide Filters' : 'Filter'}</span>
             {activeFilterCount > 0 && (
               <span className="active-filter-badge">{activeFilterCount}</span>
             )}
-            {isFilterOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            <span className="filter-btn-chevron">
+              {isFilterOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </span>
           </button>
 
           {/* Desktop Add Transaction Button */}

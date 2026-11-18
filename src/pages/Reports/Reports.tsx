@@ -179,7 +179,7 @@ export const Reports: React.FC = () => {
           </div>
 
           <div className="chart-container mt-4" style={{ height: '300px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={overviewData} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
                 <XAxis type="number" tickFormatter={(val) => `₹${val}`} tick={{ fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
@@ -200,7 +200,7 @@ export const Reports: React.FC = () => {
           <div className="chart-container">
             {expensesByCategory.length > 0 ? (
               <>
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height={260} minWidth={0}>
                   <PieChart>
                     <Pie
                       data={expensesByCategory}
@@ -223,7 +223,7 @@ export const Reports: React.FC = () => {
                     <div key={cat.name} className="cat-mini-item">
                       <div className="cat-mini-left">
                         <span className="cat-mini-color" style={{ backgroundColor: cat.color }}></span>
-                        <span>{cat.name}</span>
+                        <span className="cat-mini-name">{cat.name}</span>
                       </div>
                       <span className="cat-mini-val">{formatCurrency(cat.value)}</span>
                     </div>
@@ -241,7 +241,7 @@ export const Reports: React.FC = () => {
           <div className="chart-container">
             {incomeByCategory.length > 0 ? (
               <>
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height={260} minWidth={0}>
                   <PieChart>
                     <Pie
                       data={incomeByCategory}
@@ -264,7 +264,7 @@ export const Reports: React.FC = () => {
                     <div key={cat.name} className="cat-mini-item">
                       <div className="cat-mini-left">
                         <span className="cat-mini-color" style={{ backgroundColor: cat.color }}></span>
-                        <span>{cat.name}</span>
+                        <span className="cat-mini-name">{cat.name}</span>
                       </div>
                       <span className="cat-mini-val">{formatCurrency(cat.value)}</span>
                     </div>

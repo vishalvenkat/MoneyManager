@@ -1,10 +1,14 @@
 .calendar-page {
   max-width: 1000px;
+  width: 100%;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 .calendar-container {
   padding: 1.5rem;
+  width: 100%;
+  overflow: hidden;
 }
 
 .calendar-header {
@@ -12,6 +16,82 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.calendar-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.calendar-selects-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.calendar-select {
+  padding: 0.5rem 0.875rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.calendar-select:hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-primary);
+}
+
+.calendar-select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.calendar-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.calendar-nav-btn:hover {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+}
+
+.btn-today {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background-color: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-today:hover {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
 }
 
 .calendar-month-title {
@@ -155,9 +235,139 @@
 }
 
 .detail-amount.expense {
-  color: var(--text-primary);
+  color: var(--danger);
 }
 
 .detail-amount.transfer {
-  color: var(--text-secondary);
+  color: var(--accent-primary);
+}
+
+[data-theme='dark'] .detail-amount.expense {
+  color: #f87171;
+}
+
+[data-theme='dark'] .detail-amount.income {
+  color: #34d399;
+}
+
+[data-theme='dark'] .detail-amount.transfer {
+  color: #60a5fa;
+}
+
+.stat-text-mobile {
+  display: none;
+}
+
+.stat-text-desktop {
+  display: inline;
+}
+
+@media (max-width: 640px) {
+  .calendar-container {
+    padding: 0.75rem 0.35rem;
+    border-radius: var(--radius-md);
+  }
+
+  .calendar-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .calendar-nav-controls {
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+  }
+
+  .calendar-selects-group {
+    flex: 1;
+    min-width: 0;
+    gap: 0.35rem;
+    justify-content: center;
+  }
+
+  .calendar-select {
+    font-size: 0.8125rem;
+    padding: 0.4rem 0.45rem;
+    min-width: 0;
+    flex: 1;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-nav-btn {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+
+  .btn-today {
+    width: 100%;
+    text-align: center;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .calendar-days-row {
+    gap: 2px;
+    margin-bottom: 0.25rem;
+  }
+
+  .calendar-day-name {
+    font-size: 0.6875rem;
+    padding: 0.2rem 0;
+    font-weight: 600;
+  }
+
+  .calendar-grid {
+    gap: 2px;
+    width: 100%;
+  }
+
+  .calendar-row {
+    min-height: 52px;
+    gap: 2px;
+    width: 100%;
+  }
+
+  .calendar-cell {
+    padding: 0.2rem 0.15rem;
+    border-radius: 4px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .calendar-cell-date {
+    font-size: 0.6875rem;
+    margin-bottom: 0.1rem;
+    align-self: center;
+  }
+
+  .calendar-cell-stats {
+    gap: 1px;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .stat {
+    font-size: 0.625rem;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  .stat-text-desktop {
+    display: none;
+  }
+
+  .stat-text-mobile {
+    display: inline;
+    font-size: 0.625rem;
+    font-weight: 700;
+  }
 }

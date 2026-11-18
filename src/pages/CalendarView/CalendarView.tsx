@@ -8,6 +8,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowRightLeft } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
+import { MONTHS } from '../../utils/reportUtils';
 import type { Transaction } from '../../types';
 import './CalendarView.css';
 
@@ -15,16 +16,50 @@ export const CalendarView: React.FC = () => {
   const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { accounts } = useAccounts();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => new Date());
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
+  const nextMonth = () => setCurrentDate(prev => addMonths(prev, 1));
+  const prevMonth = () => setCurrentDate(prev => subMonths(prev, 1));
+
+  const availableYears = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const yearsSet = new Set<number>();
+    for (let y = currentYear - 5; y <= currentYear + 2; y++) {
+      yearsSet.add(y);
+    }
+    transactions.forEach(t => {
+      if (t.date) {
+        const y = new Date(t.date).getFullYear();
+        if (!isNaN(y)) yearsSet.add(y);
+      }
+    });
+    yearsSet.add(currentDate.getFullYear());
+    return Array.from(yearsSet).sort((a, b) => b - a);
+  }, [transactions, currentDate]);
+
+  const handleMonthChange = (newMonth: number) => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), newMonth, 1));
+  };
+
+  const handleYearChange = (newYear: number) => {
+    setCurrentDate(prev => new Date(newYear, prev.getMonth(), 1));
+  };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+  };
+
+  const formatCellCurrency = (amount: number) => {
+    if (amount >= 100000) {
+      return `₹${(amount / 1000).toFixed(0)}k`;
+    }
+    if (amount >= 1000) {
+      return `₹${(amount / 1000).toFixed(1).replace('.0', '')}k`;
+    }
+    return `₹${amount}`;
   };
 
   const getDayTransactions = (day: Date) => {
@@ -39,14 +74,59 @@ export const CalendarView: React.FC = () => {
   const renderHeader = () => {
     return (
       <div className="calendar-header">
-        <button className="icon-btn" onClick={prevMonth}>
-          <ChevronLeft size={24} />
-        </button>
-        <span className="calendar-month-title">
-          {format(currentDate, 'MMMM yyyy')}
-        </span>
-        <button className="icon-btn" onClick={nextMonth}>
-          <ChevronRight size={24} />
+        <div className="calendar-nav-controls">
+          <button 
+            type="button" 
+            className="icon-btn calendar-nav-btn" 
+            onClick={prevMonth}
+            title="Previous Month"
+            aria-label="Previous Month"
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          <div className="calendar-selects-group">
+            <select
+              className="calendar-select calendar-select-month"
+              value={currentDate.getMonth()}
+              onChange={e => handleMonthChange(Number(e.target.value))}
+              aria-label="Select Month"
+            >
+              {MONTHS.map((mName, idx) => (
+                <option key={idx} value={idx}>{mName}</option>
+              ))}
+            </select>
+
+            <select
+              className="calendar-select calendar-select-year"
+              value={currentDate.getFullYear()}
+              onChange={e => handleYearChange(Number(e.target.value))}
+              aria-label="Select Year"
+            >
+              {availableYears.map(yr => (
+                <option key={yr} value={yr}>{yr}</option>
+              ))}
+            </select>
+          </div>
+
+          <button 
+            type="button" 
+            className="icon-btn calendar-nav-btn" 
+            onClick={nextMonth}
+            title="Next Month"
+            aria-label="Next Month"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
+        <button 
+          type="button" 
+          className="btn-today"
+          onClick={() => setCurrentDate(new Date())}
+          title="Jump to Current Month"
+        >
+          Today
         </button>
       </div>
     );
@@ -93,8 +173,18 @@ export const CalendarView: React.FC = () => {
           >
             <span className="calendar-cell-date">{formattedDate}</span>
             <div className="calendar-cell-stats">
-              {income > 0 && <div className="stat income">+{formatCurrency(income)}</div>}
-              {expense > 0 && <div className="stat expense">-{formatCurrency(expense)}</div>}
+              {income > 0 && (
+                <div className="stat income" title={`+${formatCurrency(income)}`}>
+                  <span className="stat-text-desktop">+{formatCurrency(income)}</span>
+                  <span className="stat-text-mobile">+{formatCellCurrency(income)}</span>
+                </div>
+              )}
+              {expense > 0 && (
+                <div className="stat expense" title={`-${formatCurrency(expense)}`}>
+                  <span className="stat-text-desktop">-{formatCurrency(expense)}</span>
+                  <span className="stat-text-mobile">-{formatCellCurrency(expense)}</span>
+                </div>
+              )}
             </div>
           </div>
         );

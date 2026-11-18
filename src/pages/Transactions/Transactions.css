@@ -1,7 +1,9 @@
 .transactions-page {
   max-width: 900px;
+  width: 100%;
   margin: 0 auto;
   position: relative;
+  overflow-x: hidden;
 }
 
 .day-group {
@@ -567,6 +569,29 @@
 @media (max-width: 640px) {
   .header-btn-desktop {
     display: none;
+  }
+  .btn-toggle-filter {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .filter-btn-text,
+  .filter-btn-chevron {
+    display: none;
+  }
+  .btn-toggle-filter .active-filter-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-size: 0.65rem;
+    border: 2px solid var(--bg-primary);
   }
   .fab-add-transaction {
     display: flex;
