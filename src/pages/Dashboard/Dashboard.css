@@ -22,6 +22,129 @@
 }
 
 /* ========================================================= */
+/* Overview Top Section: User Greeting Banner & Quick Actions */
+/* ========================================================= */
+.overview-greeting-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.overview-greeting-banner:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.overview-greeting-content {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.overview-avatar-wrapper {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.overview-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--bg-secondary);
+}
+
+.overview-greeting-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.overview-greeting-title {
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin: 0;
+}
+
+.overview-greeting-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.overview-date-pill {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background-color: rgba(59, 130, 246, 0.08);
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+}
+
+[data-theme='dark'] .overview-date-pill {
+  background-color: rgba(59, 130, 246, 0.16);
+  color: var(--accent-secondary);
+}
+
+.overview-subtext-message {
+  color: var(--text-secondary);
+}
+
+.overview-actions {
+  flex-shrink: 0;
+}
+
+.btn-add-transaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.35rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.btn-add-transaction:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+}
+
+.btn-add-transaction:active {
+  transform: translateY(0);
+}
+
+/* ========================================================= */
 /* ROW 1: Summary Metrics Cards                              */
 /* ========================================================= */
 .metrics-grid {
@@ -493,6 +616,42 @@
 @media (max-width: 640px) {
   .dashboard-page {
     gap: 1.5rem;
+  }
+
+  .overview-greeting-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .overview-greeting-content {
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .overview-avatar-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .overview-greeting-title {
+    font-size: 1.35rem;
+  }
+
+  .overview-greeting-subtitle {
+    font-size: 0.8125rem;
+    gap: 0.4rem 0.5rem;
+  }
+
+  .overview-actions {
+    width: 100%;
+  }
+
+  .btn-add-transaction {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
   }
 
   .metric-card {

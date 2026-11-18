@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useTransactions } from '../../context/TransactionContext';
 import { useCategories } from '../../context/CategoryContext';
+import { resolveAvatarUrl } from '../../utils/avatarUtils';
 import { 
   BarChart, 
   Bar, 
@@ -21,7 +23,8 @@ import {
   History, 
   ArrowRight, 
   PieChart as PieChartIcon,
-  ShoppingBag
+  ShoppingBag,
+  Plus
 } from 'lucide-react';
 import { format, getDaysInMonth } from 'date-fns';
 import {
@@ -35,6 +38,8 @@ import {
 import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { currentUser, userProfile } = useAuth();
   const { accounts } = useAccounts();
   const { transactions } = useTransactions();
   const { categories } = useCategories();
@@ -42,6 +47,37 @@ export const Dashboard: React.FC = () => {
   const now = useMemo(() => new Date(), []);
   const currentMonthName = useMemo(() => format(now, 'MMMM yyyy'), [now]);
   const daysInCurrentMonth = useMemo(() => getDaysInMonth(now), [now]);
+
+  // Personalized Greeting & User Details
+  const userGreeting = useMemo(() => {
+    const hour = now.getHours();
+    let timeGreeting = 'Good morning';
+    if (hour >= 12 && hour < 17) {
+      timeGreeting = 'Good afternoon';
+    } else if (hour >= 17) {
+      timeGreeting = 'Good evening';
+    }
+
+    const rawName = userProfile?.fullName || currentUser?.displayName;
+    const cleanName = rawName?.trim();
+    const greeting = cleanName ? `${timeGreeting}, ${cleanName}!` : 'Welcome back!';
+    const formattedDate = format(now, 'EEEE, d MMMM yyyy');
+
+    const avatarUrl = userProfile?.photoURL || 
+      currentUser?.photoURL || 
+      resolveAvatarUrl(userProfile?.avatarId, undefined, userProfile?.avatarGender || 'male');
+
+    return {
+      greeting,
+      cleanName,
+      formattedDate,
+      avatarUrl
+    };
+  }, [now, userProfile, currentUser]);
+
+  const handleAddTransaction = () => {
+    navigate('/transactions', { state: { openAddModal: true } });
+  };
 
   // -------------------------------------------------------------
   // Row 1: Summary Metrics Cards
@@ -100,13 +136,39 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard-page">
-      {/* Page Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Dashboard Overview</h1>
-          <p className="page-subtitle">Track your monthly expenses, weekly spending rhythm, and category allocations.</p>
+      {/* Overview Top Section: User Greeting Banner & Quick Action */}
+      <section className="overview-greeting-banner" aria-label="User Greeting and Quick Actions">
+        <div className="overview-greeting-content">
+          <div className="overview-avatar-wrapper">
+            <img 
+              src={userGreeting.avatarUrl} 
+              alt={userGreeting.cleanName || 'User profile'} 
+              className="overview-avatar-img"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = resolveAvatarUrl(undefined, undefined, 'male');
+              }}
+            />
+          </div>
+          <div className="overview-greeting-text">
+            <h1 className="overview-greeting-title">{userGreeting.greeting}</h1>
+            <p className="overview-greeting-subtitle">
+              <span className="overview-date-pill">{userGreeting.formattedDate}</span>
+              <span className="overview-subtext-message">Track your spending rhythm & account balances</span>
+            </p>
+          </div>
         </div>
-      </div>
+        <div className="overview-actions">
+          <button 
+            type="button"
+            className="btn btn-primary btn-add-transaction"
+            onClick={handleAddTransaction}
+            title="Add a new transaction"
+          >
+            <Plus size={18} />
+            <span>Add Transaction</span>
+          </button>
+        </div>
+      </section>
 
       {/* ========================================================= */}
       {/* ROW 1: Summary Metrics Cards (3 Cards)                    */}

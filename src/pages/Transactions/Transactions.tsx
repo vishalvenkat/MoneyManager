@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
@@ -19,6 +20,8 @@ export const Transactions: React.FC = () => {
   const { transactions, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
   const { accounts } = useAccounts();
   const { categories } = useCategories();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -156,7 +159,7 @@ export const Transactions: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handleOpenModal = (transaction?: Transaction) => {
+  const handleOpenModal = useCallback((transaction?: Transaction) => {
     if (transaction) {
       setEditingTransaction(transaction);
       setType(transaction.type);
@@ -182,7 +185,20 @@ export const Transactions: React.FC = () => {
       setNotes('');
     }
     setIsModalOpen(true);
-  };
+  }, [categories, accounts]);
+
+  // Quick Action Shortcut: Automatically open the Add Transaction modal if navigated with openAddModal state or ?action=add
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const hasAddState = (location.state as { openAddModal?: boolean } | null)?.openAddModal;
+    const hasAddParam = params.get('action') === 'add';
+
+    if (hasAddState || hasAddParam) {
+      handleOpenModal();
+      // Clean up navigation state and query params to prevent repeated modal triggers
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.search, location.pathname, navigate, handleOpenModal]);
 
   const handleSwapAccounts = (e: React.MouseEvent) => {
     e.preventDefault();
