@@ -3,6 +3,54 @@
   width: 100%;
   margin: 0 auto;
   position: relative;
+  overflow-x: clip;
+}
+
+/* ========================================================= */
+/* Sticky Header for Desktop View                            */
+/* ========================================================= */
+.transactions-sticky-header {
+  position: -webkit-sticky;
+  position: sticky;
+  top: var(--topbar-height, 72px);
+  z-index: 9;
+  background-color: var(--bg-primary);
+  margin: -1rem -1rem 1.5rem -1rem;
+  padding: 1rem 1rem;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), padding var(--transition-fast), background-color var(--transition-fast);
+}
+
+.transactions-sticky-header.scrolled {
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.06);
+  padding: 0.75rem 1rem;
+}
+
+[data-theme='dark'] .transactions-sticky-header.scrolled {
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
+}
+
+.transactions-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.transactions-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.transactions-sticky-header .page-title {
+  margin: 0;
+  transition: font-size var(--transition-fast);
+}
+
+.transactions-sticky-header.scrolled .page-title {
+  font-size: 1.625rem;
 }
 
 .day-group {
@@ -631,8 +679,20 @@
 
 @media (max-width: 768px) {
   .transactions-page {
-    overflow-x: hidden;
+    overflow-x: clip;
     padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+  .transactions-sticky-header {
+    position: static;
+    background: transparent;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+    border: none;
+    box-shadow: none;
+  }
+  .transactions-sticky-header.scrolled .page-title,
+  .transactions-sticky-header .page-title {
+    font-size: 1.5rem;
   }
   .header-btn-desktop {
     display: none;
@@ -719,3 +779,11 @@
     text-align: center;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .transactions-sticky-header,
+  .transactions-sticky-header .page-title {
+    transition: none !important;
+  }
+}
+

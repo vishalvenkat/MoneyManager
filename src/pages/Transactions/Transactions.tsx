@@ -55,6 +55,30 @@ export const Transactions: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
+  // Sticky Header Scroll Detection
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const mainContent = document.querySelector('.main-content');
+    const handleScroll = () => {
+      const scrollPos = mainContent ? mainContent.scrollTop : window.scrollY;
+      setIsScrolled(scrollPos > 15);
+    };
+
+    if (mainContent) {
+      mainContent.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      if (mainContent) {
+        mainContent.removeEventListener('scroll', handleScroll);
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   // Extract unique historical notes
   const historicalNotes = useMemo(() => {
     const noteSet = new Set<string>();
@@ -309,31 +333,36 @@ export const Transactions: React.FC = () => {
 
   return (
     <div className="transactions-page">
-      <div className="page-header">
-        <h1 className="page-title">Transactions</h1>
-        <div className="header-actions">
-          {/* Collapsible Filter Toggle Button */}
-          <button
-            type="button"
-            className={`btn ${isFilterOpen ? 'btn-primary' : 'btn-secondary'} btn-toggle-filter`}
-            onClick={() => setIsFilterOpen(prev => !prev)}
-            title={isFilterOpen ? "Hide Filters" : "Show Filters"}
-            aria-label={isFilterOpen ? "Hide Filters" : "Show Filters"}
-          >
-            <Filter size={18} className="filter-toggle-icon" />
-            <span className="filter-btn-text">{isFilterOpen ? 'Hide Filters' : 'Filter'}</span>
-            {activeFilterCount > 0 && (
-              <span className="active-filter-badge">{activeFilterCount}</span>
-            )}
-            <span className="filter-btn-chevron">
-              {isFilterOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </span>
-          </button>
+      {/* Sticky Header Bar on Desktop */}
+      <div className={`transactions-sticky-header ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="transactions-header-content">
+          <div className="transactions-header-title-group">
+            <h1 className="page-title">Transactions</h1>
+          </div>
+          <div className="header-actions">
+            {/* Collapsible Filter Toggle Button */}
+            <button
+              type="button"
+              className={`btn ${isFilterOpen ? 'btn-primary' : 'btn-secondary'} btn-toggle-filter`}
+              onClick={() => setIsFilterOpen(prev => !prev)}
+              title={isFilterOpen ? "Hide Filters" : "Show Filters"}
+              aria-label={isFilterOpen ? "Hide Filters" : "Show Filters"}
+            >
+              <Filter size={18} className="filter-toggle-icon" />
+              <span className="filter-btn-text">{isFilterOpen ? 'Hide Filters' : 'Filter'}</span>
+              {activeFilterCount > 0 && (
+                <span className="active-filter-badge">{activeFilterCount}</span>
+              )}
+              <span className="filter-btn-chevron">
+                {isFilterOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </span>
+            </button>
 
-          {/* Desktop Add Transaction Button */}
-          <button className="btn btn-primary header-btn-desktop" onClick={() => handleOpenModal()}>
-            <Plus size={18} /> Add Transaction
-          </button>
+            {/* Desktop Add Transaction Button */}
+            <button className="btn btn-primary header-btn-desktop" onClick={() => handleOpenModal()}>
+              <Plus size={18} /> Add Transaction
+            </button>
+          </div>
         </div>
       </div>
 
