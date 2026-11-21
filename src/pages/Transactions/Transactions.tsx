@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
+import { usePrivacy } from '../../context/PrivacyContext';
 import type { Transaction, TransactionType } from '../../types';
 import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX, ChevronLeft, ChevronRight, Filter, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { Modal, ConfirmDialog } from '../../components/Modal';
@@ -21,6 +22,7 @@ export const Transactions: React.FC = () => {
   const { transactions, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
   const { accounts } = useAccounts();
   const { categories } = useCategories();
+  const { isNumbersHidden, formatCurrency } = usePrivacy();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -269,10 +271,6 @@ export const Transactions: React.FC = () => {
       return sum;
     }, 0);
   }, [transactions, categoryId, currentCategoryObj, type, editingTransaction, date]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
-  };
 
   const renderBudgetAlert = () => {
     if (!currentCategoryObj?.budget || type !== 'expense') return null;
@@ -549,7 +547,7 @@ export const Transactions: React.FC = () => {
                   const category = getCategoryTheme(t.categoryId);
                   const isTransfer = t.type === 'transfer';
                   const closingBal = closingBalanceMap.get(t.id);
-                  const balInfo = getFormattedClosingBalance(closingBal, filterAccount);
+                  const balInfo = getFormattedClosingBalance(closingBal, filterAccount, isNumbersHidden);
 
                   return (
                     <div key={t.id} className="transaction-row">
@@ -580,7 +578,7 @@ export const Transactions: React.FC = () => {
                       <div className="tx-amount-actions">
                         <div className="tx-amount-group">
                           <div className={`tx-amount ${t.type}`}>
-                            {t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(t.amount)}
+                            {isNumbersHidden ? '***' : `${t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}${formatCurrency(t.amount)}`}
                           </div>
                           {balInfo && (
                             <div 

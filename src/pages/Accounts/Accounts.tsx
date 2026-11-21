@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Wallet, CreditCard, Landmark, PiggyBank, Building,
 import { Modal, ConfirmDialog } from '../../components/Modal';
 import { AnimatedCounter } from '../../components/AnimatedCounter';
 import { ScrollReveal } from '../../components/ScrollReveal';
+import { usePrivacy } from '../../context/PrivacyContext';
 import type { Account, AccountGroup } from '../../types';
 import './Accounts.css';
 
@@ -25,6 +26,7 @@ export const Accounts: React.FC = () => {
     addAccountGroup, updateAccountGroup, deleteAccountGroup 
   } = useAccounts();
   const { transactions } = useTransactions();
+  const { isNumbersHidden, formatCurrency } = usePrivacy();
 
   // Account Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -213,10 +215,6 @@ export const Accounts: React.FC = () => {
         variant: 'danger'
       });
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
   };
 
   // Grouping accounts by dynamic groups
@@ -448,7 +446,7 @@ export const Accounts: React.FC = () => {
                 />
                 {netTxChange !== 0 && (
                   <span className="form-helper-text">
-                    Current balance reflects net transactions ({netTxChange >= 0 ? '+' : ''}{formatCurrency(netTxChange)}).
+                    Current balance reflects net transactions ({isNumbersHidden ? '***' : `${netTxChange >= 0 ? '+' : ''}${formatCurrency(netTxChange)}`}).
                   </span>
                 )}
               </div>

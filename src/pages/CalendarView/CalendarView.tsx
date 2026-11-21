@@ -9,6 +9,7 @@ import {
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowRightLeft } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
 import { ScrollReveal } from '../../components/ScrollReveal';
+import { usePrivacy } from '../../context/PrivacyContext';
 import { MONTHS } from '../../utils/reportUtils';
 import type { Transaction } from '../../types';
 import './CalendarView.css';
@@ -17,6 +18,7 @@ export const CalendarView: React.FC = () => {
   const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { accounts } = useAccounts();
+  const { isNumbersHidden, formatCurrency } = usePrivacy();
   const [currentDate, setCurrentDate] = useState(() => new Date());
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -49,11 +51,8 @@ export const CalendarView: React.FC = () => {
     setCurrentDate(prev => new Date(newYear, prev.getMonth(), 1));
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
-  };
-
   const formatCellCurrency = (amount: number) => {
+    if (isNumbersHidden) return '***';
     if (amount >= 100000) {
       return `₹${(amount / 1000).toFixed(0)}k`;
     }
@@ -175,15 +174,15 @@ export const CalendarView: React.FC = () => {
             <span className="calendar-cell-date">{formattedDate}</span>
             <div className="calendar-cell-stats">
               {income > 0 && (
-                <div className="stat income" title={`+${formatCurrency(income)}`}>
-                  <span className="stat-text-desktop">+{formatCurrency(income)}</span>
-                  <span className="stat-text-mobile">+{formatCellCurrency(income)}</span>
+                <div className="stat income" title={isNumbersHidden ? 'Hidden' : `+${formatCurrency(income)}`}>
+                  <span className="stat-text-desktop">{isNumbersHidden ? '***' : `+${formatCurrency(income)}`}</span>
+                  <span className="stat-text-mobile">{isNumbersHidden ? '***' : `+${formatCellCurrency(income)}`}</span>
                 </div>
               )}
               {expense > 0 && (
-                <div className="stat expense" title={`-${formatCurrency(expense)}`}>
-                  <span className="stat-text-desktop">-{formatCurrency(expense)}</span>
-                  <span className="stat-text-mobile">-{formatCellCurrency(expense)}</span>
+                <div className="stat expense" title={isNumbersHidden ? 'Hidden' : `-${formatCurrency(expense)}`}>
+                  <span className="stat-text-desktop">{isNumbersHidden ? '***' : `-${formatCurrency(expense)}`}</span>
+                  <span className="stat-text-mobile">{isNumbersHidden ? '***' : `-${formatCellCurrency(expense)}`}</span>
                 </div>
               )}
             </div>
@@ -263,7 +262,7 @@ export const CalendarView: React.FC = () => {
                     </div>
                   </div>
                   <div className={`detail-amount ${t.type}`}>
-                    {t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}{formatCurrency(t.amount)}
+                    {isNumbersHidden ? '***' : `${t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}${formatCurrency(t.amount)}`}
                   </div>
                 </div>
               );

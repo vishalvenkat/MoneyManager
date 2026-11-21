@@ -217,18 +217,19 @@ export const calculateRunningBalances = calculateClosingBalances;
  */
 export function getFormattedClosingBalance(
   closingBal?: TransactionClosingBalance,
-  filterAccount: string = 'all'
+  filterAccount: string = 'all',
+  isMasked: boolean = false
 ): FormattedBalanceInfo | null {
   if (!closingBal) return null;
 
   // Standard Income or Expense
   if (closingBal.closingBalance !== undefined) {
-    const isNeg = closingBal.closingBalance < 0;
-    const formatted = formatCurrencyINR(closingBal.closingBalance);
+    const isNeg = !isMasked && closingBal.closingBalance < 0;
+    const formatted = isMasked ? '***' : formatCurrencyINR(closingBal.closingBalance);
     const accName = closingBal.accountName ? `${closingBal.accountName} ` : '';
     return {
       text: `Closing Balance: ${formatted}`,
-      tooltip: `${accName}Closing Balance: ${formatted}`,
+      tooltip: isMasked ? 'Closing Balance: Hidden' : `${accName}Closing Balance: ${formatted}`,
       isNegative: isNeg,
       balanceValue: closingBal.closingBalance,
     };
@@ -243,21 +244,21 @@ export function getFormattedClosingBalance(
   // If specific account filter is active
   if (filterAccount !== 'all') {
     if (filterAccount === closingBal.fromAccountId && hasFrom) {
-      const isNeg = closingBal.fromClosingBalance! < 0;
-      const formatted = formatCurrencyINR(closingBal.fromClosingBalance!);
+      const isNeg = !isMasked && closingBal.fromClosingBalance! < 0;
+      const formatted = isMasked ? '***' : formatCurrencyINR(closingBal.fromClosingBalance!);
       return {
         text: `Closing Balance: ${formatted}`,
-        tooltip: `${closingBal.fromAccountName || 'From Account'} Closing Balance: ${formatted}`,
+        tooltip: isMasked ? 'Closing Balance: Hidden' : `${closingBal.fromAccountName || 'From Account'} Closing Balance: ${formatted}`,
         isNegative: isNeg,
         balanceValue: closingBal.fromClosingBalance,
       };
     }
     if (filterAccount === closingBal.toAccountId && hasTo) {
-      const isNeg = closingBal.toClosingBalance! < 0;
-      const formatted = formatCurrencyINR(closingBal.toClosingBalance!);
+      const isNeg = !isMasked && closingBal.toClosingBalance! < 0;
+      const formatted = isMasked ? '***' : formatCurrencyINR(closingBal.toClosingBalance!);
       return {
         text: `Closing Balance: ${formatted}`,
-        tooltip: `${closingBal.toAccountName || 'To Account'} Closing Balance: ${formatted}`,
+        tooltip: isMasked ? 'Closing Balance: Hidden' : `${closingBal.toAccountName || 'To Account'} Closing Balance: ${formatted}`,
         isNegative: isNeg,
         balanceValue: closingBal.toClosingBalance,
       };
@@ -266,28 +267,28 @@ export function getFormattedClosingBalance(
 
   // Default 'all' accounts view for transfers
   if (hasFrom && hasTo) {
-    const fFrom = formatCurrencyINR(closingBal.fromClosingBalance!);
-    const fTo = formatCurrencyINR(closingBal.toClosingBalance!);
-    const isNeg = closingBal.fromClosingBalance! < 0 || closingBal.toClosingBalance! < 0;
+    const fFrom = isMasked ? '***' : formatCurrencyINR(closingBal.fromClosingBalance!);
+    const fTo = isMasked ? '***' : formatCurrencyINR(closingBal.toClosingBalance!);
+    const isNeg = !isMasked && (closingBal.fromClosingBalance! < 0 || closingBal.toClosingBalance! < 0);
     return {
       text: `Closing: ${fFrom} → ${fTo}`,
-      tooltip: `${closingBal.fromAccountName || 'From'}: ${fFrom} | ${closingBal.toAccountName || 'To'}: ${fTo}`,
+      tooltip: isMasked ? 'Closing Balance: Hidden' : `${closingBal.fromAccountName || 'From'}: ${fFrom} | ${closingBal.toAccountName || 'To'}: ${fTo}`,
       isNegative: isNeg,
     };
   } else if (hasFrom) {
-    const fFrom = formatCurrencyINR(closingBal.fromClosingBalance!);
+    const fFrom = isMasked ? '***' : formatCurrencyINR(closingBal.fromClosingBalance!);
     return {
       text: `Closing Balance: ${fFrom}`,
-      tooltip: `${closingBal.fromAccountName || 'Account'}: ${fFrom}`,
-      isNegative: closingBal.fromClosingBalance! < 0,
+      tooltip: isMasked ? 'Closing Balance: Hidden' : `${closingBal.fromAccountName || 'Account'}: ${fFrom}`,
+      isNegative: !isMasked && closingBal.fromClosingBalance! < 0,
       balanceValue: closingBal.fromClosingBalance,
     };
   } else {
-    const fTo = formatCurrencyINR(closingBal.toClosingBalance!);
+    const fTo = isMasked ? '***' : formatCurrencyINR(closingBal.toClosingBalance!);
     return {
       text: `Closing Balance: ${fTo}`,
-      tooltip: `${closingBal.toAccountName || 'Account'}: ${fTo}`,
-      isNegative: closingBal.toClosingBalance! < 0,
+      tooltip: isMasked ? 'Closing Balance: Hidden' : `${closingBal.toAccountName || 'Account'}: ${fTo}`,
+      isNegative: !isMasked && closingBal.toClosingBalance! < 0,
       balanceValue: closingBal.toClosingBalance,
     };
   }

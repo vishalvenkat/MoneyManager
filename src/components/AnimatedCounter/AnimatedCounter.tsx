@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { usePrivacy } from '../../context/PrivacyContext';
 
 /**
  * Custom hook that animates a numeric value from its current state to a target value
@@ -75,7 +76,13 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   formatter,
   className = '',
 }) => {
+  const { isNumbersHidden } = usePrivacy();
   const animatedValue = useAnimatedNumber(value, duration);
+
+  if (isNumbersHidden) {
+    return <span className={`animated-counter masked ${className}`}>***</span>;
+  }
+
   const formatted = formatter ? formatter(animatedValue) : animatedValue.toLocaleString('en-IN');
 
   return <span className={`animated-counter ${className}`}>{formatted}</span>;

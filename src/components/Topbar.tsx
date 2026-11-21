@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Moon, Sun, Bell, LogOut, Menu, Trash2, User } from 'lucide-react';
+import { Moon, Sun, Bell, LogOut, Menu, Trash2, User, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { usePrivacy } from '../context/PrivacyContext';
 import { expenseService } from '../services/expenseService';
 import { ConfirmDialog } from './Modal';
 import { UserProfileModal } from './UserProfile/UserProfileModal';
@@ -19,6 +20,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
   const [resetError, setResetError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { logout, currentUser, userProfile } = useAuth();
+  const { isNumbersHidden, toggleHideNumbers } = usePrivacy();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,6 +77,14 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
       </button>
 
       <div className="topbar-actions">
+        <button
+          className={`icon-btn privacy-toggle-btn ${isNumbersHidden ? 'active' : ''}`}
+          onClick={toggleHideNumbers}
+          title={isNumbersHidden ? "Show Numbers (Currently Hidden)" : "Hide Numbers (Privacy Mode)"}
+          aria-label={isNumbersHidden ? "Show Numbers" : "Hide Numbers"}
+        >
+          {isNumbersHidden ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
         <button className="icon-btn">
           <Bell size={20} />
         </button>

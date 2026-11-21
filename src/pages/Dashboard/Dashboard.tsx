@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useTransactions } from '../../context/TransactionContext';
 import { useCategories } from '../../context/CategoryContext';
+import { usePrivacy } from '../../context/PrivacyContext';
 import { resolveAvatarUrl } from '../../utils/avatarUtils';
 import { 
   BarChart, 
@@ -45,6 +46,7 @@ export const Dashboard: React.FC = () => {
   const { accounts } = useAccounts();
   const { transactions } = useTransactions();
   const { categories } = useCategories();
+  const { isNumbersHidden } = usePrivacy();
 
   const now = useMemo(() => new Date(), []);
   const currentMonthName = useMemo(() => format(now, 'MMMM yyyy'), [now]);
@@ -121,6 +123,7 @@ export const Dashboard: React.FC = () => {
 
   // Currency Formatter
   const formatCurrency = (amount: number, compact: boolean = false) => {
+    if (isNumbersHidden) return '***';
     return new Intl.NumberFormat('en-IN', { 
       style: 'currency', 
       currency: 'INR',
@@ -255,7 +258,7 @@ export const Dashboard: React.FC = () => {
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} 
-                      tickFormatter={(val) => val >= 1000 ? `₹${(val / 1000).toFixed(0)}k` : `₹${val}`}
+                      tickFormatter={(val) => isNumbersHidden ? '***' : (val >= 1000 ? `₹${(val / 1000).toFixed(0)}k` : `₹${val}`)}
                     />
                     <RechartsTooltip 
                       cursor={{ fill: 'var(--bg-primary)' }}
@@ -434,7 +437,7 @@ export const Dashboard: React.FC = () => {
                       <div className="recent-meta">
                         <div className="recent-date">{format(new Date(t.date), 'MMM dd, yyyy')}</div>
                         <div className="recent-amount expense">
-                          -{formatCurrency(t.amount)}
+                          {isNumbersHidden ? '***' : `-${formatCurrency(t.amount)}`}
                         </div>
                       </div>
                     </div>

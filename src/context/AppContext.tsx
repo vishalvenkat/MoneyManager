@@ -4,17 +4,20 @@ import { AccountProvider } from './AccountContext';
 import { CategoryProvider } from './CategoryContext';
 import { TransactionProvider } from './TransactionContext';
 import { AuthProvider } from './AuthContext';
+import { PrivacyProvider } from './PrivacyContext';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <AuthProvider>
-      <AccountProvider>
-        <CategoryProvider>
-          <TransactionProvider>
-            {children}
-          </TransactionProvider>
-        </CategoryProvider>
-      </AccountProvider>
+      <PrivacyProvider>
+        <AccountProvider>
+          <CategoryProvider>
+            <TransactionProvider>
+              {children}
+            </TransactionProvider>
+          </CategoryProvider>
+        </AccountProvider>
+      </PrivacyProvider>
     </AuthProvider>
   );
 };

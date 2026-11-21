@@ -6,6 +6,7 @@ import { MONTHS, QUARTERS, getAvailableYears, filterTransactionsByPeriod } from 
 import { Calendar } from 'lucide-react';
 import { AnimatedCounter } from '../../components/AnimatedCounter';
 import { ScrollReveal } from '../../components/ScrollReveal';
+import { usePrivacy } from '../../context/PrivacyContext';
 import './Reports.css';
 
 type ReportPeriod = 'month' | 'quarter' | 'year';
@@ -13,6 +14,7 @@ type ReportPeriod = 'month' | 'quarter' | 'year';
 export const Reports: React.FC = () => {
   const { transactions } = useTransactions();
   const { categories } = useCategories();
+  const { isNumbersHidden, formatCurrency } = usePrivacy();
 
   const now = new Date();
   const [period, setPeriod] = useState<ReportPeriod>('month');
@@ -75,10 +77,6 @@ export const Reports: React.FC = () => {
       color: categories.find(c => c.id === key)?.color || '#ccc'
     })).sort((a, b) => b.value - a.value);
   }, [filteredTransactions, categories]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
-  };
 
   const overviewData = [
     { name: 'Income', value: totalIncome, fill: 'var(--success)' },
@@ -189,7 +187,7 @@ export const Reports: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={overviewData} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
-                  <XAxis type="number" tickFormatter={(val) => `₹${val}`} tick={{ fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
+                  <XAxis type="number" tickFormatter={(val) => isNumbersHidden ? '***' : `₹${val}`} tick={{ fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-primary)', fontWeight: 500 }} />
                   <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} formatter={(val: any) => formatCurrency(val)} />
                   <Bar 

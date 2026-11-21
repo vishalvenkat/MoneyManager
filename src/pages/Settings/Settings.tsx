@@ -7,6 +7,7 @@ import { Modal, ConfirmDialog } from '../../components/Modal';
 import { UserProfileModal } from '../../components/UserProfile/UserProfileModal';
 import { ScrollReveal } from '../../components/ScrollReveal';
 import { resolveAvatarUrl } from '../../utils/avatarUtils';
+import { usePrivacy } from '../../context/PrivacyContext';
 import './Settings.css';
 
 export const Settings: React.FC = () => {
@@ -18,6 +19,7 @@ export const Settings: React.FC = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
+  const { isNumbersHidden } = usePrivacy();
 
   const displayName = userProfile?.fullName || currentUser?.displayName || 'User';
   const userEmail = userProfile?.email || currentUser?.email || '';
@@ -190,7 +192,7 @@ export const Settings: React.FC = () => {
                       <div className="budget-details">
                         <span className="budget-label">{cat.budget ? 'Monthly Limit' : 'No Budget Set'}</span>
                         {cat.budget ? (
-                          <span className="budget-value">₹{cat.budget.toLocaleString('en-IN')}</span>
+                          <span className="budget-value">{isNumbersHidden ? '***' : `₹${cat.budget.toLocaleString('en-IN')}`}</span>
                         ) : null}
                       </div>
                     </div>

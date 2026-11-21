@@ -45,6 +45,12 @@
   transform: scale(0.92);
 }
 
+.privacy-toggle-btn.active {
+  color: var(--accent-primary);
+  background-color: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
 .avatar {
   width: 40px;
   height: 40px;
@@ -158,8 +164,12 @@
 
 @media (max-width: 768px) {
   .topbar {
-    padding: 0 1.25rem;
+    padding: 0 1rem;
     justify-content: space-between;
+  }
+
+  .topbar-actions {
+    gap: 0.5rem;
   }
 
   .mobile-menu-btn {
