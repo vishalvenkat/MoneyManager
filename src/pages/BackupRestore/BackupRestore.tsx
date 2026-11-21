@@ -9,6 +9,7 @@ import { Modal } from '../../components/Modal/Modal';
 import { Download, Upload, FileText, Database, FileSpreadsheet, CheckCircle2, AlertCircle, Filter, AlertTriangle, RefreshCw, FileCode } from 'lucide-react';
 import { subMonths, format } from 'date-fns';
 import { getAvailableYears } from '../../utils/reportUtils';
+import { ScrollReveal } from '../../components/ScrollReveal';
 import './BackupRestore.css';
 
 export type ExportRangeType = 'all' | 'monthly' | 'last6months' | 'last12months' | 'custom';
@@ -250,8 +251,9 @@ export const BackupRestore: React.FC = () => {
         </div>
       </div>
 
-      <div className="backup-cards-grid">
-        {/* Card 1: Enhanced Excel Export */}
+      <ScrollReveal animation="fade-up" delay={50}>
+        <div className="backup-cards-grid">
+          {/* Card 1: Enhanced Excel Export */}
         <div className="card backup-card">
           <div className="backup-card-header">
             <div className="icon-badge icon-badge-primary">
@@ -492,13 +494,15 @@ export const BackupRestore: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </ScrollReveal>
 
       {/* Excel Import Modal */}
       <Modal
         isOpen={isImportModalOpen}
         onClose={handleCloseImportModal}
         title="Import Historical Transactions from Excel"
+        size="xl"
       >
         {!importSummary ? (
           <div>
@@ -639,6 +643,7 @@ export const BackupRestore: React.FC = () => {
         isOpen={isConfirmModalOpen}
         onClose={() => !isRestoring && setIsConfirmModalOpen(false)}
         title="Confirm Full Data Restoration"
+        size="md"
       >
         <div className="restore-confirm-dialog">
           <div className="warning-callout-header">
@@ -706,6 +711,7 @@ export const BackupRestore: React.FC = () => {
         isOpen={isSuccessModalOpen}
         onClose={() => window.location.reload()}
         title="Restoration Complete"
+        size="sm"
       >
         <div className="import-summary-view">
           <div className="summary-success-header">

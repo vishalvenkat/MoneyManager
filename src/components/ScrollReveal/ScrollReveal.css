@@ -1,0 +1,38 @@
+/* Scroll Reveal Entry Animations */
+.scroll-reveal-item {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal-item.fade-up {
+  transform: translateY(12px);
+}
+
+.scroll-reveal-item.slide-up {
+  transform: translateY(18px);
+}
+
+.scroll-reveal-item.fade-in {
+  transform: translateY(0);
+}
+
+.scroll-reveal-item.scale-up {
+  transform: scale(0.96);
+}
+
+.scroll-reveal-item.is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal-item {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

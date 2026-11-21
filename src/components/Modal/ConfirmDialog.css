@@ -1,0 +1,64 @@
+/* Standardized Confirmation Dialog Styles */
+
+.confirm-dialog-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 0.5rem 0;
+}
+
+.confirm-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+}
+
+.confirm-variant-danger {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+.confirm-variant-warning {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
+}
+
+.confirm-variant-info {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: var(--accent-primary);
+}
+
+.confirm-variant-success {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+}
+
+.confirm-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.confirm-message {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.confirm-footer {
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .confirm-dialog-body {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 0.25rem 0;
+  }
+}

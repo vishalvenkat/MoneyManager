@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Moon, Sun, Bell, LogOut, Menu, Trash2, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { expenseService } from '../services/expenseService';
-import { Modal } from './Modal/Modal';
+import { ConfirmDialog } from './Modal';
 import { UserProfileModal } from './UserProfile/UserProfileModal';
 import { resolveAvatarUrl } from '../utils/avatarUtils';
 import './Topbar.css';
@@ -16,6 +16,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { logout, currentUser, userProfile } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -52,7 +53,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
       setIsDropdownOpen(false);
     } catch (err) {
       console.error('Failed to reset data', err);
-      alert('An error occurred while resetting your data. Please try again.');
+      setResetError('An error occurred while resetting your data. Please try again.');
     } finally {
       setIsResetting(false);
     }
@@ -119,34 +120,30 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
         </div>
       </div>
 
-      <Modal 
-        isOpen={isResetModalOpen} 
-        onClose={() => !isResetting && setIsResetModalOpen(false)} 
+      <ConfirmDialog
+        isOpen={isResetModalOpen}
+        onClose={() => !isResetting && setIsResetModalOpen(false)}
+        onConfirm={handleResetData}
         title="Reset Data"
-      >
-        <div style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
-          <p>Are you sure you want to reset all your transaction data? This action cannot be undone.</p>
-        </div>
-        <div className="modal-footer">
-          <button 
-            type="button" 
-            className="btn btn-secondary" 
-            onClick={() => setIsResetModalOpen(false)}
-            disabled={isResetting}
-          >
-            Cancel
-          </button>
-          <button 
-            type="button" 
-            className="btn btn-primary" 
-            style={{ backgroundColor: 'var(--danger)' }}
-            onClick={handleResetData}
-            disabled={isResetting}
-          >
-            {isResetting ? 'Resetting...' : 'Confirm'}
-          </button>
-        </div>
-      </Modal>
+        message="Are you sure you want to reset all your transaction data? This action cannot be undone."
+        confirmLabel="Reset Data"
+        variant="danger"
+        isLoading={isResetting}
+      />
+
+      {resetError && (
+        <ConfirmDialog
+          isOpen={Boolean(resetError)}
+          onClose={() => setResetError(null)}
+          onConfirm={() => setResetError(null)}
+          title="Reset Failed"
+          message={resetError}
+          confirmLabel="OK"
+          showCancel={false}
+          variant="danger"
+        />
+      )}
+
       <UserProfileModal 
         isOpen={isProfileModalOpen} 
         onClose={() => setIsProfileModalOpen(false)} 

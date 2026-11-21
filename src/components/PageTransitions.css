@@ -1,0 +1,31 @@
+/* ========================================================= */
+/* Page Transition Keyframes & Wrapper                       */
+/* ========================================================= */
+
+@keyframes pageFadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-transition-wrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+.animate-page-enter {
+  animation: pageFadeSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-enter {
+    animation: none !important;
+    transform: none !important;
+  }
+}

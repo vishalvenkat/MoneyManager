@@ -201,6 +201,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       isOpen={isOpen}
       onClose={() => !loading && onClose()}
       title="User Profile Management"
+      size="md"
     >
       <form onSubmit={handleSubmit} className="profile-modal-body" noValidate>
         {/* Live Profile Preview Card */}

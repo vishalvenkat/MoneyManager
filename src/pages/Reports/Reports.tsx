@@ -4,6 +4,8 @@ import { useCategories } from '../../context/CategoryContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { MONTHS, QUARTERS, getAvailableYears, filterTransactionsByPeriod } from '../../utils/reportUtils';
 import { Calendar } from 'lucide-react';
+import { AnimatedCounter } from '../../components/AnimatedCounter';
+import { ScrollReveal } from '../../components/ScrollReveal';
 import './Reports.css';
 
 type ReportPeriod = 'month' | 'quarter' | 'year';
@@ -158,125 +160,145 @@ export const Reports: React.FC = () => {
         </div>
       </div>
 
-      <div className="reports-grid">
-        <div className="card overview-card">
-          <h3 className="chart-title">{getPeriodTitle()}</h3>
-          <div className="flow-stats">
-            <div className="stat-box">
-              <span className="stat-label">Total Income</span>
-              <span className="stat-value income">+{formatCurrency(totalIncome)}</span>
+      <ScrollReveal animation="fade-up" delay={50}>
+        <div className="reports-grid">
+          <div className="card overview-card">
+            <h3 className="chart-title">{getPeriodTitle()}</h3>
+            <div className="flow-stats">
+              <div className="stat-box">
+                <span className="stat-label">Total Income</span>
+                <span className="stat-value income">
+                  +<AnimatedCounter value={totalIncome} formatter={formatCurrency} />
+                </span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-label">Total Expense</span>
+                <span className="stat-value expense">
+                  -<AnimatedCounter value={totalExpense} formatter={formatCurrency} />
+                </span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-label">Net Savings</span>
+                <span className={`stat-value ${totalIncome - totalExpense >= 0 ? 'income' : 'expense'}`}>
+                  <AnimatedCounter value={totalIncome - totalExpense} formatter={formatCurrency} />
+                </span>
+              </div>
             </div>
-            <div className="stat-box">
-              <span className="stat-label">Total Expense</span>
-              <span className="stat-value expense">-{formatCurrency(totalExpense)}</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-label">Net Savings</span>
-              <span className={`stat-value ${totalIncome - totalExpense >= 0 ? 'income' : 'expense'}`}>
-                {formatCurrency(totalIncome - totalExpense)}
-              </span>
+
+            <div className="chart-container mt-4" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <BarChart data={overviewData} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
+                  <XAxis type="number" tickFormatter={(val) => `₹${val}`} tick={{ fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-primary)', fontWeight: 500 }} />
+                  <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} formatter={(val: any) => formatCurrency(val)} />
+                  <Bar 
+                    dataKey="value" 
+                    radius={[0, 4, 4, 0]}
+                    isAnimationActive={true}
+                    animationDuration={850}
+                    animationEasing="ease-out"
+                  >
+                    {overviewData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="chart-container mt-4" style={{ height: '300px' }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={overviewData} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
-                <XAxis type="number" tickFormatter={(val) => `₹${val}`} tick={{ fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-primary)', fontWeight: 500 }} />
-                <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} formatter={(val: any) => formatCurrency(val)} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {overviewData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="card breakdown-card">
-          <h3 className="chart-title">Expense Breakdown</h3>
-          <div className="chart-container">
-            {expensesByCategory.length > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={260} minWidth={0}>
-                  <PieChart>
-                    <Pie
-                      data={expensesByCategory}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {expensesByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip formatter={(val: any) => formatCurrency(val)} contentStyle={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="category-list-mini">
-                  {expensesByCategory.map(cat => (
-                    <div key={cat.name} className="cat-mini-item">
-                      <div className="cat-mini-left">
-                        <span className="cat-mini-color" style={{ backgroundColor: cat.color }}></span>
-                        <span className="cat-mini-name">{cat.name}</span>
+          <div className="card breakdown-card">
+            <h3 className="chart-title">Expense Breakdown</h3>
+            <div className="chart-container">
+              {expensesByCategory.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={260} minWidth={0}>
+                    <PieChart>
+                      <Pie
+                        data={expensesByCategory}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        isAnimationActive={true}
+                        animationDuration={950}
+                        animationEasing="ease-out"
+                        animationBegin={100}
+                      >
+                        {expensesByCategory.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip formatter={(val: any) => formatCurrency(val)} contentStyle={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="category-list-mini">
+                    {expensesByCategory.map(cat => (
+                      <div key={cat.name} className="cat-mini-item">
+                        <div className="cat-mini-left">
+                          <span className="cat-mini-color" style={{ backgroundColor: cat.color }}></span>
+                          <span className="cat-mini-name">{cat.name}</span>
+                        </div>
+                        <span className="cat-mini-val">{formatCurrency(cat.value)}</span>
                       </div>
-                      <span className="cat-mini-val">{formatCurrency(cat.value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="empty-chart">No expenses for this period.</div>
-            )}
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="empty-chart">No expenses for this period.</div>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="card breakdown-card">
-          <h3 className="chart-title">Income Breakdown</h3>
-          <div className="chart-container">
-            {incomeByCategory.length > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={260} minWidth={0}>
-                  <PieChart>
-                    <Pie
-                      data={incomeByCategory}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {incomeByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip formatter={(val: any) => formatCurrency(val)} contentStyle={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="category-list-mini">
-                  {incomeByCategory.map(cat => (
-                    <div key={cat.name} className="cat-mini-item">
-                      <div className="cat-mini-left">
-                        <span className="cat-mini-color" style={{ backgroundColor: cat.color }}></span>
-                        <span className="cat-mini-name">{cat.name}</span>
+          <div className="card breakdown-card">
+            <h3 className="chart-title">Income Breakdown</h3>
+            <div className="chart-container">
+              {incomeByCategory.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={260} minWidth={0}>
+                    <PieChart>
+                      <Pie
+                        data={incomeByCategory}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        isAnimationActive={true}
+                        animationDuration={950}
+                        animationEasing="ease-out"
+                        animationBegin={150}
+                      >
+                        {incomeByCategory.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip formatter={(val: any) => formatCurrency(val)} contentStyle={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="category-list-mini">
+                    {incomeByCategory.map(cat => (
+                      <div key={cat.name} className="cat-mini-item">
+                        <div className="cat-mini-left">
+                          <span className="cat-mini-color" style={{ backgroundColor: cat.color }}></span>
+                          <span className="cat-mini-name">{cat.name}</span>
+                        </div>
+                        <span className="cat-mini-val">{formatCurrency(cat.value)}</span>
                       </div>
-                      <span className="cat-mini-val">{formatCurrency(cat.value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="empty-chart">No income for this period.</div>
-            )}
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="empty-chart">No income for this period.</div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
     </div>
   );
 };

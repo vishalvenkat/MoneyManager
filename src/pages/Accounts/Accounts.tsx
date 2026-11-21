@@ -2,7 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { useAccounts } from '../../context/AccountContext';
 import { useTransactions } from '../../context/TransactionContext';
 import { Plus, Edit2, Trash2, Wallet, CreditCard, Landmark, PiggyBank, Building, Smartphone, Briefcase, Settings2, EyeOff } from 'lucide-react';
-import { Modal } from '../../components/Modal/Modal';
+import { Modal, ConfirmDialog } from '../../components/Modal';
+import { AnimatedCounter } from '../../components/AnimatedCounter';
+import { ScrollReveal } from '../../components/ScrollReveal';
 import type { Account, AccountGroup } from '../../types';
 import './Accounts.css';
 
@@ -42,6 +44,11 @@ export const Accounts: React.FC = () => {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [groupName, setGroupName] = useState('');
   const [groupIcon, setGroupIcon] = useState('Wallet');
+
+  // Confirmation / Alert Dialog States
+  const [deleteAccountId, setDeleteAccountId] = useState<string | null>(null);
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<AccountGroup | null>(null);
+  const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; variant?: 'info' | 'warning' | 'danger' | 'success' } | null>(null);
 
   const handleOpenModal = (account?: Account, defaultGroupId?: string) => {
     if (account) {
@@ -193,10 +200,18 @@ export const Accounts: React.FC = () => {
     try {
       const result = await deleteAccountGroup(groupId);
       if (result && result.movedCount > 0) {
-         alert(`Group deleted successfully. ${result.movedCount} account(s) were automatically moved to "${result.targetGroupName}".`);
+        setAlertInfo({
+          title: 'Group Deleted',
+          message: `Group deleted successfully. ${result.movedCount} account(s) were automatically moved to "${result.targetGroupName}".`,
+          variant: 'info'
+        });
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to delete group.');
+      setAlertInfo({
+        title: 'Delete Failed',
+        message: err.message || 'Failed to delete group.',
+        variant: 'danger'
+      });
     }
   };
 
@@ -257,102 +272,108 @@ export const Accounts: React.FC = () => {
         </div>
       </div>
 
-      <div className="card grand-total-card">
-        <div className="grand-total-content">
-          <div className="grand-total-info">
-            <span className="grand-total-label">Total Net Assets</span>
-            <h2 className="grand-total-amount">{formatCurrency(grandTotal)}</h2>
-          </div>
-          <div className="group-summary-pills">
-            {accountGroups.map(grp => (
-              <div key={grp.id} className="summary-pill">
-                <span className="pill-name">{grp.name}</span>
-                <span className="pill-amount">{formatCurrency(groupTotals[grp.id] || 0)}</span>
-              </div>
-            ))}
+      <ScrollReveal animation="fade-up" delay={50}>
+        <div className="card grand-total-card">
+          <div className="grand-total-content">
+            <div className="grand-total-info">
+              <span className="grand-total-label">Total Net Assets</span>
+              <h2 className="grand-total-amount">
+                <AnimatedCounter value={grandTotal} formatter={formatCurrency} />
+              </h2>
+            </div>
+            <div className="group-summary-pills">
+              {accountGroups.map(grp => (
+                <div key={grp.id} className="summary-pill">
+                  <span className="pill-name">{grp.name}</span>
+                  <span className="pill-amount">
+                    <AnimatedCounter value={groupTotals[grp.id] || 0} formatter={formatCurrency} />
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
 
       <div className="account-groups-container">
-        {accountGroups.map(grp => {
+        {accountGroups.map((grp, gIndex) => {
           const groupAccs = groupedAccounts[grp.id] || [];
           const total = groupTotals[grp.id] || 0;
           const GroupIconComponent = AVAILABLE_ICONS[grp.icon] || AVAILABLE_ICONS['Wallet'];
 
           return (
-            <div key={grp.id} className="account-group-section">
-              <div className="group-header">
-                <div className="group-header-title">
-                  <span className="group-icon-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', border: '1px solid var(--border-color)'}}>
-                    {GroupIconComponent}
-                  </span>
-                  <h2>{grp.name}</h2>
-                  <span className="group-count">({groupAccs.length})</span>
+            <ScrollReveal key={grp.id} animation="fade-up" delay={80 + gIndex * 40}>
+              <div className="account-group-section">
+                <div className="group-header">
+                  <div className="group-header-title">
+                    <span className="group-icon-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', border: '1px solid var(--border-color)'}}>
+                      {GroupIconComponent}
+                    </span>
+                    <h2>{grp.name}</h2>
+                    <span className="group-count">({groupAccs.length})</span>
+                  </div>
+                  <div className="group-header-total">
+                    Total: <strong><AnimatedCounter value={total} formatter={formatCurrency} /></strong>
+                  </div>
                 </div>
-                <div className="group-header-total">
-                  Total: <strong>{formatCurrency(total)}</strong>
-                </div>
-              </div>
 
-              {groupAccs.length > 0 ? (
-                <div className="accounts-grid">
-                  {groupAccs.map(account => (
-                    <div key={account.id} className="card account-card">
-                      <div className="account-card-header">
-                        <div>
-                          <div className="account-name">{account.name}</div>
-                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem', flexWrap: 'wrap' }}>
-                            <span className="account-group-tag" style={{ margin: 0 }}>{grp.name}</span>
-                            {account.includeInNetWorth === false && (
-                              <span className="account-group-tag" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-secondary)' }}>
-                                <EyeOff size={12} /> Excluded from Net Worth
-                              </span>
+                {groupAccs.length > 0 ? (
+                  <div className="accounts-grid">
+                    {groupAccs.map(account => (
+                      <div key={account.id} className="card account-card">
+                        <div className="account-card-header">
+                          <div>
+                            <div className="account-name">{account.name}</div>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                              <span className="account-group-tag" style={{ margin: 0 }}>{grp.name}</span>
+                              {account.includeInNetWorth === false && (
+                                <span className="account-group-tag" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-secondary)' }}>
+                                  <EyeOff size={12} /> Excluded from Net Worth
+                                </span>
+                              )}
+                            </div>
+                            <div className="account-balance">
+                              <AnimatedCounter value={account.currentBalance} formatter={formatCurrency} />
+                            </div>
+                            {account.initialBalance !== undefined && account.initialBalance !== account.currentBalance && (
+                              <div className="account-initial-balance" title="Initial opening balance">
+                                Initial: {formatCurrency(account.initialBalance)}
+                              </div>
                             )}
                           </div>
-                          <div className="account-balance">{formatCurrency(account.currentBalance)}</div>
-                          {account.initialBalance !== undefined && account.initialBalance !== account.currentBalance && (
-                            <div className="account-initial-balance" title="Initial opening balance">
-                              Initial: {formatCurrency(account.initialBalance)}
-                            </div>
-                          )}
+                        </div>
+
+                        <div className="account-actions">
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => handleOpenModal(account)}
+                          >
+                            <Edit2 size={16} /> Edit
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                            onClick={() => setDeleteAccountId(account.id)}
+                          >
+                            <Trash2 size={16} /> Delete
+                          </button>
                         </div>
                       </div>
-
-                      <div className="account-actions">
-                        <button
-                          className="btn btn-secondary"
-                          onClick={() => handleOpenModal(account)}
-                        >
-                          <Edit2 size={16} /> Edit
-                        </button>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                          onClick={() => {
-                            if (window.confirm('Are you sure you want to delete this account?')) {
-                              deleteAccount(account.id);
-                            }
-                          }}
-                        >
-                          <Trash2 size={16} /> Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-group-card card">
-                  <p>No {grp.name} accounts added yet.</p>
-                  <button
-                    className="btn btn-secondary btn-small"
-                    onClick={() => handleOpenModal(undefined, grp.id)}
-                  >
-                    <Plus size={14} /> Add {grp.name} Account
-                  </button>
-                </div>
-              )}
-            </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-group-card card">
+                    <p>No {grp.name} accounts added yet.</p>
+                    <button
+                      className="btn btn-secondary btn-small"
+                      onClick={() => handleOpenModal(undefined, grp.id)}
+                    >
+                      <Plus size={14} /> Add {grp.name} Account
+                    </button>
+                  </div>
+                )}
+              </div>
+            </ScrollReveal>
           );
         })}
         {accountGroups.length === 0 && (
@@ -367,6 +388,7 @@ export const Accounts: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         title={editingAccount ? "Edit Account" : "Add Account"}
+        size="lg"
       >
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -479,6 +501,7 @@ export const Accounts: React.FC = () => {
         isOpen={isGroupModalOpen}
         onClose={() => setIsGroupModalOpen(false)}
         title="Manage Account Groups"
+        size="md"
       >
         <div className="manage-groups-container">
           <div className="existing-groups-list">
@@ -495,12 +518,14 @@ export const Accounts: React.FC = () => {
                       </button>
                       <button type="button" className="icon-btn-small delete-btn" onClick={() => {
                         if (accountGroups.length <= 1) {
-                           alert('Cannot delete the last remaining group.');
-                           return;
+                          setAlertInfo({
+                            title: 'Cannot Delete Group',
+                            message: 'Cannot delete the last remaining group.',
+                            variant: 'warning'
+                          });
+                          return;
                         }
-                        if (window.confirm(`Are you sure you want to delete the group "${grp.name}"? Any linked accounts will be moved safely.`)) {
-                           handleDeleteGroup(grp.id);
-                        }
+                        setDeleteGroupTarget(grp);
                       }}>
                         <Trash2 size={14} />
                       </button>
@@ -563,6 +588,53 @@ export const Accounts: React.FC = () => {
           </form>
         </div>
       </Modal>
+
+      {/* Delete Account Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteAccountId)}
+        onClose={() => setDeleteAccountId(null)}
+        onConfirm={() => {
+          if (deleteAccountId) {
+            deleteAccount(deleteAccountId);
+            setDeleteAccountId(null);
+          }
+        }}
+        title="Delete Account"
+        message="Are you sure you want to delete this account? Transactions linked to this account will remain, but the account will be removed."
+        confirmLabel="Delete Account"
+        variant="danger"
+      />
+
+      {/* Delete Group Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteGroupTarget)}
+        onClose={() => setDeleteGroupTarget(null)}
+        onConfirm={() => {
+          if (deleteGroupTarget) {
+            const targetId = deleteGroupTarget.id;
+            setDeleteGroupTarget(null);
+            handleDeleteGroup(targetId);
+          }
+        }}
+        title="Delete Account Group"
+        message={`Are you sure you want to delete the group "${deleteGroupTarget?.name}"? Any linked accounts will be moved safely to another group.`}
+        confirmLabel="Delete Group"
+        variant="danger"
+      />
+
+      {/* General Alert Dialog */}
+      {alertInfo && (
+        <ConfirmDialog
+          isOpen={Boolean(alertInfo)}
+          onClose={() => setAlertInfo(null)}
+          onConfirm={() => setAlertInfo(null)}
+          title={alertInfo.title}
+          message={alertInfo.message}
+          confirmLabel="OK"
+          showCancel={false}
+          variant={alertInfo.variant || 'info'}
+        />
+      )}
     </div>
   );
 };

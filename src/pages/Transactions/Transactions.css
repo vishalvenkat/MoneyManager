@@ -1,9 +1,8 @@
 .transactions-page {
-  max-width: 900px;
+  max-width: 960px;
   width: 100%;
   margin: 0 auto;
   position: relative;
-  overflow-x: hidden;
 }
 
 .day-group {
@@ -41,7 +40,7 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
   gap: 1rem;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .transaction-row:last-child {
@@ -50,6 +49,7 @@
 
 .transaction-row:hover {
   background-color: var(--bg-primary);
+  transform: translateX(4px);
 }
 
 .tx-icon {
@@ -201,30 +201,65 @@
   display: flex;
   gap: 0.25rem;
   opacity: 0;
-  transition: opacity var(--transition-fast);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
 
 .transaction-row:hover .tx-actions {
   opacity: 1;
 }
 
+.tx-actions button {
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.tx-actions button:hover {
+  transform: scale(1.15);
+}
+
+.tx-actions button:active {
+  transform: scale(0.92);
+}
+
 /* Forms */
+.transaction-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .form-row {
   display: flex;
   gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-row .form-group {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .form-row-transfer {
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-row-transfer .form-group {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .swap-account-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.125rem;
 }
 
 .btn-swap-accounts {
@@ -259,23 +294,38 @@
 }
 
 .flex-1 {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .type-toggle {
   display: flex;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   overflow: hidden;
+  height: 42px;
 }
 
 .toggle-btn {
-  flex: 1;
-  padding: 0.625rem;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0.5rem 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
   transition: all var(--transition-fast);
 }
 
@@ -286,6 +336,14 @@
 .toggle-btn.active {
   background-color: var(--accent-primary);
   color: #fff;
+}
+
+.no-accounts-warning {
+  color: var(--warning);
+  font-size: 0.8125rem;
+  margin-top: 0.5rem;
+  text-align: right;
+  width: 100%;
 }
 
 /* Header Actions & Collapsible Filter Toggle */
@@ -319,13 +377,15 @@
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin 0.3s ease;
+  transform: translateY(-8px);
+  transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), margin 0.3s ease;
   margin-bottom: 0;
 }
 
 .filter-collapsible-wrapper.open {
   max-height: 600px;
   opacity: 1;
+  transform: translateY(0);
   margin-bottom: 1.5rem;
 }
 
@@ -540,33 +600,40 @@
 /* Mobile Floating Action Button (FAB) */
 .fab-add-transaction {
   position: fixed;
-  bottom: 1.75rem;
-  right: 1.75rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  right: calc(1.5rem + env(safe-area-inset-right, 0px));
   width: 56px;
   height: 56px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent-primary), #4f46e5);
   color: #ffffff;
   border: none;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45), 0 2px 6px rgba(0, 0, 0, 0.18);
   display: none;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 99;
+  z-index: 40;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .fab-add-transaction:hover {
   transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5), 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.55), 0 3px 8px rgba(0, 0, 0, 0.22);
 }
 
 .fab-add-transaction:active {
-  transform: scale(0.95);
+  transform: scale(0.94);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .transactions-page {
+    overflow-x: hidden;
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
   .header-btn-desktop {
     display: none;
   }
@@ -610,16 +677,30 @@
   .tx-closing-balance {
     font-size: 0.7rem;
   }
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .form-row .form-group {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 1rem;
+  }
   .form-row-transfer {
     flex-direction: column;
     align-items: stretch;
     gap: 0;
   }
   .form-row-transfer .form-group {
+    width: 100%;
+    min-width: 0;
     margin-bottom: 0.5rem;
   }
   .swap-account-wrapper {
-    margin-bottom: 0.5rem;
+    margin: 0.25rem 0 0.75rem 0;
+    display: flex;
+    justify-content: center;
+    width: 100%;
   }
   .btn-swap-accounts {
     transform: rotate(90deg);
@@ -629,5 +710,12 @@
   }
   .btn-swap-accounts:active:not(:disabled) {
     transform: rotate(270deg) scale(0.92);
+  }
+  .toggle-btn {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8125rem;
+  }
+  .no-accounts-warning {
+    text-align: center;
   }
 }

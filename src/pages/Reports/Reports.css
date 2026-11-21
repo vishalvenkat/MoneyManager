@@ -5,7 +5,6 @@
   padding-bottom: 2rem;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
 }
 
 .period-tabs {
@@ -185,6 +184,9 @@
 }
 
 @media (max-width: 768px) {
+  .reports-page {
+    overflow-x: hidden;
+  }
   .reports-grid {
     grid-template-columns: 1fr;
     gap: 1.25rem;

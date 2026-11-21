@@ -8,6 +8,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowRightLeft } from 'lucide-react';
 import { Modal } from '../../components/Modal/Modal';
+import { ScrollReveal } from '../../components/ScrollReveal';
 import { MONTHS } from '../../utils/reportUtils';
 import type { Transaction } from '../../types';
 import './CalendarView.css';
@@ -215,16 +216,19 @@ export const CalendarView: React.FC = () => {
         <h1 className="page-title">Calendar</h1>
       </div>
 
-      <div className="card calendar-container">
-        {renderHeader()}
-        {renderDays()}
-        {renderCells()}
-      </div>
+      <ScrollReveal animation="fade-up" delay={50}>
+        <div className="card calendar-container">
+          {renderHeader()}
+          {renderDays()}
+          {renderCells()}
+        </div>
+      </ScrollReveal>
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={`Transactions for ${selectedDate ? format(selectedDate, 'MMM d, yyyy') : ''}`}
+        size="md"
       >
         <div className="day-detail-list">
           {selectedDayTransactions.length === 0 ? (

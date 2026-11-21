@@ -1,15 +1,31 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import './Modal.css';
 
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
   children: React.ReactNode;
+  footer?: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  subtitle,
+  icon,
+  children,
+  footer,
+  size = 'md',
+  className = '',
+}) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -28,19 +44,37 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+  const modalElement = (
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div 
+        className={`modal-content modal-${size} ${className}`} 
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
-          <h3>{title}</h3>
-          <button className="icon-btn-small" onClick={onClose}>
+          <div className="modal-header-text">
+            {icon && <span className="modal-header-icon">{icon}</span>}
+            <div>
+              <h3 id="modal-title">{title}</h3>
+              {subtitle && <p className="modal-subtitle">{subtitle}</p>}
+            </div>
+          </div>
+          <button className="icon-btn-small modal-close-btn" onClick={onClose} aria-label="Close dialog">
             <X size={20} />
           </button>
         </div>
         <div className="modal-body">
           {children}
         </div>
+        {footer && (
+          <div className="modal-footer">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalElement, document.body)
+    : modalElement;
 };

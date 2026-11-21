@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import './PageTransitions.css';
 
 export const Layout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <div className="app-container">
@@ -12,7 +14,9 @@ export const Layout: React.FC = () => {
       <div className="main-content">
         <Topbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
         <main className="page-container">
-          <Outlet />
+          <div key={location.pathname} className="page-transition-wrapper animate-page-enter">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

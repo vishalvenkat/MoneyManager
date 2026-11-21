@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
 import type { Transaction, TransactionType } from '../../types';
 import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX, ChevronLeft, ChevronRight, Filter, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
-import { Modal } from '../../components/Modal/Modal';
+import { Modal, ConfirmDialog } from '../../components/Modal';
 import { format } from 'date-fns';
 import { getAvailableFilterCounts, matchesFiltersExcept, type ActiveFilters } from '../../utils/filterUtils';
 import { AutocompleteInput } from '../../components/AutocompleteInput/AutocompleteInput';
@@ -25,6 +26,7 @@ export const Transactions: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Form State
   const [type, setType] = useState<TransactionType>('expense');
@@ -595,9 +597,8 @@ export const Transactions: React.FC = () => {
                           </button>
                           <button
                             className="icon-btn-small delete-btn"
-                            onClick={() => {
-                              if (window.confirm('Delete this transaction?')) deleteTransaction(t.id);
-                            }}
+                            onClick={() => setDeleteConfirmId(t.id)}
+                            title="Delete Transaction"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -612,24 +613,28 @@ export const Transactions: React.FC = () => {
         })}
       </div>
 
-      {/* Mobile Floating Action Button (FAB) */}
-      <button
-        type="button"
-        className="fab-add-transaction"
-        onClick={() => handleOpenModal()}
-        title="Add Transaction"
-        aria-label="Add Transaction"
-      >
-        <Plus size={26} />
-      </button>
+      {/* Mobile Floating Action Button (FAB) - Portaled to document.body for true viewport-fixed positioning */}
+      {typeof document !== 'undefined' && createPortal(
+        <button
+          type="button"
+          className="fab-add-transaction"
+          onClick={() => handleOpenModal()}
+          title="Add Transaction"
+          aria-label="Add Transaction"
+        >
+          <Plus size={26} />
+        </button>,
+        document.body
+      )}
 
       {/* Add / Edit Transaction Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         title={editingTransaction ? "Edit Transaction" : "Add Transaction"}
+        size="lg"
       >
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="transaction-form">
           <div className="form-group">
             <label className="form-label">Type</label>
             <div className="type-toggle">
@@ -790,12 +795,28 @@ export const Transactions: React.FC = () => {
             </button>
           </div>
           {accounts.length === 0 && (
-            <p style={{ color: 'var(--warning)', fontSize: '0.875rem', marginTop: '0.5rem', textAlign: 'right' }}>
+            <p className="no-accounts-warning">
               Please create an Account first before adding transactions.
             </p>
           )}
         </form>
       </Modal>
+
+      {/* Standardized Delete Transaction Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            deleteTransaction(deleteConfirmId);
+            setDeleteConfirmId(null);
+          }
+        }}
+        title="Delete Transaction"
+        message="Are you sure you want to delete this transaction? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+      />
     </div>
   );
 };

@@ -3,8 +3,9 @@ import { useCategories } from '../../context/CategoryContext';
 import { useAuth } from '../../context/AuthContext';
 import type { Category, CategoryType } from '../../types';
 import { Plus, Edit2, Trash2, X, Target, User, Mail, Phone, Calendar } from 'lucide-react';
-import { Modal } from '../../components/Modal/Modal';
+import { Modal, ConfirmDialog } from '../../components/Modal';
 import { UserProfileModal } from '../../components/UserProfile/UserProfileModal';
+import { ScrollReveal } from '../../components/ScrollReveal';
 import { resolveAvatarUrl } from '../../utils/avatarUtils';
 import './Settings.css';
 
@@ -16,6 +17,7 @@ export const Settings: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
 
   const displayName = userProfile?.fullName || currentUser?.displayName || 'User';
   const userEmail = userProfile?.email || currentUser?.email || '';
@@ -104,41 +106,44 @@ export const Settings: React.FC = () => {
   return (
     <div className="settings-page">
       {/* User Profile Card */}
-      <div className="card settings-profile-card">
-        <div className="settings-profile-left">
-          <div className="settings-profile-avatar-wrapper">
-            <img src={avatarUrl} alt="Avatar" className="settings-profile-avatar" />
-          </div>
-          <div className="settings-profile-details">
-            <div className="settings-profile-header-line">
-              <h3 className="settings-profile-name">{displayName}</h3>
+      <ScrollReveal animation="fade-up" delay={50}>
+        <div className="card settings-profile-card">
+          <div className="settings-profile-left">
+            <div className="settings-profile-avatar-wrapper">
+              <img src={avatarUrl} alt="Avatar" className="settings-profile-avatar" />
             </div>
-            <div className="settings-profile-meta">
-              <span className="settings-profile-meta-item">
-                <Mail size={14} /> {userEmail || 'No email set'}
-              </span>
-              {userMobile && (
+            <div className="settings-profile-details">
+              <div className="settings-profile-header-line">
+                <h3 className="settings-profile-name">{displayName}</h3>
+              </div>
+              <div className="settings-profile-meta">
                 <span className="settings-profile-meta-item">
-                  <Phone size={14} /> {userMobile}
+                  <Mail size={14} /> {userEmail || 'No email set'}
                 </span>
-              )}
-              {userDob && (
-                <span className="settings-profile-meta-item">
-                  <Calendar size={14} /> {userDob}
-                </span>
-              )}
+                {userMobile && (
+                  <span className="settings-profile-meta-item">
+                    <Phone size={14} /> {userMobile}
+                  </span>
+                )}
+                {userDob && (
+                  <span className="settings-profile-meta-item">
+                    <Calendar size={14} /> {userDob}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+          <button 
+            className="btn btn-secondary settings-edit-profile-btn"
+            onClick={() => setIsProfileModalOpen(true)}
+          >
+            <User size={16} /> Edit Profile
+          </button>
         </div>
-        <button 
-          className="btn btn-secondary settings-edit-profile-btn"
-          onClick={() => setIsProfileModalOpen(true)}
-        >
-          <User size={16} /> Edit Profile
-        </button>
-      </div>
+      </ScrollReveal>
 
-      <div className="page-header" style={{ marginTop: '2.5rem' }}>
+      <ScrollReveal animation="fade-up" delay={100}>
+        <div className="page-header" style={{ marginTop: '2.5rem' }}>
         <h2 className="page-title" style={{ fontSize: '1.25rem' }}>Categories</h2>
         <button className="btn btn-primary" onClick={() => handleOpenModal()}>
           <Plus size={18} /> Add Category
@@ -197,11 +202,7 @@ export const Settings: React.FC = () => {
                     </button>
                     <button
                       className="icon-btn-small delete-btn"
-                      onClick={() => {
-                        if (window.confirm('Delete this category?')) {
-                          deleteCategory(cat.id);
-                        }
-                      }}
+                      onClick={() => setDeleteCategoryId(cat.id)}
                       title="Delete Category"
                     >
                       <Trash2 size={16} />
@@ -226,12 +227,14 @@ export const Settings: React.FC = () => {
           )}
         </div>
       </div>
+      </ScrollReveal>
 
 
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         title={editingCategory ? "Edit Category" : "Add Category"}
+        size="md"
       >
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -337,6 +340,22 @@ export const Settings: React.FC = () => {
       <UserProfileModal 
         isOpen={isProfileModalOpen} 
         onClose={() => setIsProfileModalOpen(false)} 
+      />
+
+      {/* Delete Category Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteCategoryId)}
+        onClose={() => setDeleteCategoryId(null)}
+        onConfirm={() => {
+          if (deleteCategoryId) {
+            deleteCategory(deleteCategoryId);
+            setDeleteCategoryId(null);
+          }
+        }}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? Associated transactions will keep their records, but this category option will no longer be available."
+        confirmLabel="Delete Category"
+        variant="danger"
       />
     </div>
   );

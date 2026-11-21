@@ -1,8 +1,7 @@
 .calendar-page {
-  max-width: 1000px;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  overflow-x: hidden;
 }
 
 .calendar-container {
@@ -263,6 +262,10 @@
 }
 
 @media (max-width: 640px) {
+  .calendar-page {
+    overflow-x: hidden;
+  }
+
   .calendar-container {
     padding: 0.75rem 0.35rem;
     border-radius: var(--radius-md);
