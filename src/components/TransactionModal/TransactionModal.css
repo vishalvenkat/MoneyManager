@@ -1,0 +1,206 @@
+/* ========================================================= */
+/* Reusable Transaction Add / Edit Modal Styles             */
+/* ========================================================= */
+
+.transaction-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.form-row-transfer {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.form-row-transfer .form-group {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.swap-account-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.125rem;
+}
+
+.btn-swap-accounts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--accent-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.btn-swap-accounts:hover:not(:disabled) {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  transform: rotate(180deg);
+}
+
+.btn-swap-accounts:active:not(:disabled) {
+  transform: rotate(180deg) scale(0.92);
+}
+
+.btn-swap-accounts:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.flex-1 {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.type-toggle {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  height: 42px;
+}
+
+.toggle-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0.5rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toggle-btn:hover {
+  color: var(--text-primary);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.toggle-btn.active {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Budget Feedback Alerts */
+.budget-feedback {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1.25rem;
+  border-left: 4px solid transparent;
+  animation: fadeIn 0.3s ease;
+}
+
+.budget-feedback strong {
+  margin-right: 0.25rem;
+}
+
+.budget-feedback-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #065f46;
+  border-left-color: var(--success);
+}
+
+.budget-feedback-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #92400e;
+  border-left-color: var(--warning);
+}
+
+.budget-feedback-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #991b1b;
+  border-left-color: var(--danger);
+}
+
+[data-theme='dark'] .budget-feedback-success { color: #34d399; }
+[data-theme='dark'] .budget-feedback-warning { color: #fbbf24; }
+[data-theme='dark'] .budget-feedback-danger { color: #f87171; }
+
+.no-accounts-warning {
+  color: var(--warning);
+  font-size: 0.8125rem;
+  margin-top: 0.5rem;
+  text-align: right;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .form-row .form-group {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 1rem;
+  }
+  .form-row-transfer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .form-row-transfer .form-group {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 0.5rem;
+  }
+  .swap-account-wrapper {
+    margin: 0.25rem 0 0.75rem 0;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  .btn-swap-accounts {
+    transform: rotate(90deg);
+  }
+  .btn-swap-accounts:hover:not(:disabled) {
+    transform: rotate(270deg);
+  }
+  .btn-swap-accounts:active:not(:disabled) {
+    transform: rotate(270deg) scale(0.92);
+  }
+  .toggle-btn {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8125rem;
+  }
+  .no-accounts-warning {
+    text-align: center;
+  }
+}

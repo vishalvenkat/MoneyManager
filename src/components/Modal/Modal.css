@@ -18,6 +18,14 @@
   animation: modalOverlayIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.modal-overlay.modal-layer-elevated {
+  z-index: 1050;
+}
+
+.modal-overlay.modal-layer-alert {
+  z-index: 1100;
+}
+
 .modal-content {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);

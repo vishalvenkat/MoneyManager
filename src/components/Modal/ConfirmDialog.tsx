@@ -64,6 +64,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       title={title}
       size="sm"
       className="confirm-dialog-modal"
+      layer="alert"
     >
       <div className="confirm-dialog-body">
         <div className={`confirm-icon-wrapper confirm-variant-${variant}`}>

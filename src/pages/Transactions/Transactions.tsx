@@ -5,12 +5,12 @@ import { useTransactions } from '../../context/TransactionContext';
 import { useAccounts } from '../../context/AccountContext';
 import { useCategories } from '../../context/CategoryContext';
 import { usePrivacy } from '../../context/PrivacyContext';
-import type { Transaction, TransactionType } from '../../types';
+import type { Transaction } from '../../types';
 import { Plus, Edit2, Trash2, ArrowRightLeft, TrendingUp, TrendingDown, FilterX, ChevronLeft, ChevronRight, Filter, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
-import { Modal, ConfirmDialog } from '../../components/Modal';
+import { ConfirmDialog } from '../../components/Modal';
+import { TransactionModal } from '../../components/TransactionModal/TransactionModal';
 import { format } from 'date-fns';
 import { getAvailableFilterCounts, matchesFiltersExcept, type ActiveFilters } from '../../utils/filterUtils';
-import { AutocompleteInput } from '../../components/AutocompleteInput/AutocompleteInput';
 import { 
   calculateClosingBalances, 
   getFormattedClosingBalance, 
@@ -19,7 +19,7 @@ import {
 import './Transactions.css';
 
 export const Transactions: React.FC = () => {
-  const { transactions, addTransaction, updateTransaction, deleteTransaction } = useTransactions();
+  const { transactions, deleteTransaction } = useTransactions();
   const { accounts } = useAccounts();
   const { categories } = useCategories();
   const { isNumbersHidden, formatCurrency } = usePrivacy();
@@ -29,17 +29,6 @@ export const Transactions: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
-  // Form State
-  const [type, setType] = useState<TransactionType>('expense');
-  const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [categoryId, setCategoryId] = useState('');
-  const [subcategory, setSubcategory] = useState('');
-  const [accountId, setAccountId] = useState('');
-  const [fromAccountId, setFromAccountId] = useState('');
-  const [toAccountId, setToAccountId] = useState('');
-  const [notes, setNotes] = useState('');
 
   // Filtering State & Panel Collapse Toggle
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -78,17 +67,6 @@ export const Transactions: React.FC = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
-
-  // Extract unique historical notes
-  const historicalNotes = useMemo(() => {
-    const noteSet = new Set<string>();
-    transactions.forEach(t => {
-      if (t.notes && t.notes.trim()) {
-        noteSet.add(t.notes.trim());
-      }
-    });
-    return Array.from(noteSet).sort();
-  }, [transactions]);
 
   // Active filter count calculation
   const activeFilterCount = useMemo(() => {
@@ -188,32 +166,14 @@ export const Transactions: React.FC = () => {
   };
 
   const handleOpenModal = useCallback((transaction?: Transaction) => {
-    if (transaction) {
-      setEditingTransaction(transaction);
-      setType(transaction.type);
-      setAmount(transaction.amount.toString());
-      setDate(transaction.date.split('T')[0]);
-      setCategoryId(transaction.categoryId || '');
-      setSubcategory(transaction.subcategory || '');
-      setAccountId(transaction.accountId || '');
-      setFromAccountId(transaction.fromAccountId || '');
-      setToAccountId(transaction.toAccountId || '');
-      setNotes(transaction.notes || '');
-    } else {
-      setEditingTransaction(null);
-      setType('expense');
-      setAmount('');
-      setDate(format(new Date(), 'yyyy-MM-dd'));
-      const defaultCat = categories.find(c => c.type === 'expense');
-      setCategoryId(defaultCat?.id || '');
-      setSubcategory('');
-      setAccountId(accounts[0]?.id || '');
-      setFromAccountId(accounts[0]?.id || '');
-      setToAccountId(accounts[1]?.id || '');
-      setNotes('');
-    }
+    setEditingTransaction(transaction || null);
     setIsModalOpen(true);
-  }, [categories, accounts]);
+  }, []);
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingTransaction(null);
+  };
 
   // Quick Action Shortcut: Automatically open the Add Transaction modal if navigated with openAddModal state or ?action=add
   useEffect(() => {
@@ -227,101 +187,6 @@ export const Transactions: React.FC = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, location.search, location.pathname, navigate, handleOpenModal]);
-
-  const handleSwapAccounts = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setFromAccountId(toAccountId);
-    setToAccountId(fromAccountId);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingTransaction(null);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const amountNum = parseFloat(amount);
-    const isoDate = `${date}T12:00:00.000Z`;
-
-    const txData: Omit<Transaction, 'id'> = {
-      amount: amountNum,
-      date: isoDate,
-      type,
-      notes,
-    };
-
-    if (type === 'transfer') {
-      txData.fromAccountId = fromAccountId;
-      txData.toAccountId = toAccountId;
-    } else {
-      txData.categoryId = categoryId;
-      txData.subcategory = subcategory || '';
-      txData.accountId = accountId;
-    }
-
-    if (editingTransaction) {
-      updateTransaction(editingTransaction.id, txData);
-    } else {
-      addTransaction(txData);
-    }
-    handleCloseModal();
-  };
-
-  // Smart Budget Logic & Subcategories helper
-  const currentCategoryObj = useMemo(() => {
-    return categories.find(c => c.id === categoryId);
-  }, [categories, categoryId]);
-
-  const availableSubcategories = useMemo(() => {
-    return currentCategoryObj?.subcategories || [];
-  }, [currentCategoryObj]);
-
-  const currentMonthCategorySpend = useMemo(() => {
-    if (!currentCategoryObj || !currentCategoryObj.budget || type !== 'expense') return 0;
-    const baseDate = new Date(date);
-
-    return transactions.reduce((sum, t) => {
-      if (
-        t.type === 'expense' &&
-        t.categoryId === categoryId &&
-        (!editingTransaction || t.id !== editingTransaction.id)
-      ) {
-        const txDate = new Date(t.date);
-        if (txDate.getMonth() === baseDate.getMonth() && txDate.getFullYear() === baseDate.getFullYear()) {
-          return sum + t.amount;
-        }
-      }
-      return sum;
-    }, 0);
-  }, [transactions, categoryId, currentCategoryObj, type, editingTransaction, date]);
-
-  const renderBudgetAlert = () => {
-    if (!currentCategoryObj?.budget || type !== 'expense') return null;
-    const projectedSpend = currentMonthCategorySpend + (parseFloat(amount) || 0);
-    const budget = currentCategoryObj.budget;
-    const percentage = (projectedSpend / budget) * 100;
-
-    if (percentage > 100) {
-      return (
-        <div className="budget-feedback budget-feedback-danger">
-          <strong>Over Budget:</strong> You will exceed your monthly budget by {formatCurrency(projectedSpend - budget)}.
-        </div>
-      );
-    } else if (percentage >= 80) {
-      return (
-        <div className="budget-feedback budget-feedback-warning">
-          <strong>Warning:</strong> You are approaching your monthly limit. {formatCurrency(budget - projectedSpend)} remaining.
-        </div>
-      );
-    } else {
-      return (
-        <div className="budget-feedback budget-feedback-success">
-          <strong>On Track:</strong> You still have {formatCurrency(budget - projectedSpend)} available this month.
-        </div>
-      );
-    }
-  };
 
   const getCategoryTheme = (id?: string) => {
     return categories.find(c => c.id === id);
@@ -655,179 +520,11 @@ export const Transactions: React.FC = () => {
       )}
 
       {/* Add / Edit Transaction Modal */}
-      <Modal
+      <TransactionModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={editingTransaction ? "Edit Transaction" : "Add Transaction"}
-        size="lg"
-      >
-        <form onSubmit={handleSubmit} className="transaction-form">
-          <div className="form-group">
-            <label className="form-label">Type</label>
-            <div className="type-toggle">
-              {(['expense', 'income', 'transfer'] as TransactionType[]).map(tType => (
-                <button
-                  key={tType}
-                  type="button"
-                  className={`toggle-btn ${type === tType ? 'active' : ''}`}
-                  onClick={() => {
-                    setType(tType);
-                    const defCat = categories.find(c => c.type === tType);
-                    setCategoryId(defCat?.id || '');
-                    if (!defCat?.subcategories?.includes(subcategory)) {
-                      setSubcategory('');
-                    }
-                  }}
-                >
-                  {tType.charAt(0).toUpperCase() + tType.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group flex-1">
-              <label className="form-label">Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                className="form-input"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group flex-1">
-              <label className="form-label">Date</label>
-              <input
-                type="date"
-                className="form-input"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          {type === 'transfer' ? (
-            <div className="form-row form-row-transfer">
-              <div className="form-group flex-1">
-                <label className="form-label">From Account</label>
-                <select
-                  className="form-input"
-                  value={fromAccountId}
-                  onChange={e => setFromAccountId(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select Account</option>
-                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({formatCurrency(a.currentBalance)})</option>)}
-                </select>
-              </div>
-              <div className="swap-account-wrapper">
-                <button
-                  type="button"
-                  className="btn-swap-accounts"
-                  onClick={handleSwapAccounts}
-                  title="Swap From and To Accounts"
-                  aria-label="Swap From and To Accounts"
-                  disabled={!fromAccountId && !toAccountId}
-                >
-                  <ArrowRightLeft size={18} />
-                </button>
-              </div>
-              <div className="form-group flex-1">
-                <label className="form-label">To Account</label>
-                <select
-                  className="form-input"
-                  value={toAccountId}
-                  onChange={e => setToAccountId(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select Account</option>
-                  {accounts.filter(a => a.id !== fromAccountId).map(a => <option key={a.id} value={a.id}>{a.name} ({formatCurrency(a.currentBalance)})</option>)}
-                </select>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="form-row">
-                <div className="form-group flex-1">
-                  <label className="form-label">Category</label>
-                  <select
-                    className="form-input"
-                    value={categoryId}
-                    onChange={e => {
-                      const newCatId = e.target.value;
-                      setCategoryId(newCatId);
-                      const newCat = categories.find(c => c.id === newCatId);
-                      if (!newCat?.subcategories?.includes(subcategory)) {
-                        setSubcategory('');
-                      }
-                    }}
-                    required
-                  >
-                    <option value="" disabled>Select Category</option>
-                    {categories.filter(c => c.type === type).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group flex-1">
-                  <label className="form-label">Account</label>
-                  <select
-                    className="form-input"
-                    value={accountId}
-                    onChange={e => setAccountId(e.target.value)}
-                    required
-                  >
-                    <option value="" disabled>Select Account</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {availableSubcategories.length > 0 && (
-                <div className="form-group">
-                  <label className="form-label">Subcategory (Optional)</label>
-                  <select
-                    className="form-input"
-                    value={subcategory}
-                    onChange={e => setSubcategory(e.target.value)}
-                  >
-                    <option value="">Select Subcategory (Optional)</option>
-                    {availableSubcategories.map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </>
-          )}
-
-          {renderBudgetAlert()}
-
-          <div className="form-group">
-            <label className="form-label">Notes (Optional)</label>
-            <AutocompleteInput
-              value={notes}
-              onChange={setNotes}
-              suggestions={historicalNotes}
-              placeholder="e.g. Grocery shopping, Rent, etc."
-            />
-          </div>
-
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={accounts.length === 0}>
-              Save Transaction
-            </button>
-          </div>
-          {accounts.length === 0 && (
-            <p className="no-accounts-warning">
-              Please create an Account first before adding transactions.
-            </p>
-          )}
-        </form>
-      </Modal>
+        transaction={editingTransaction}
+      />
 
       {/* Standardized Delete Transaction Confirmation Dialog */}
       <ConfirmDialog
